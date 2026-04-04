@@ -5,7 +5,7 @@ import secrets
 import os
 
 app = Flask(__name__, static_folder='static')
-app.secret_key = secrets.token_hex(32)
+app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
 
 DB = 'passwords.db'
 
