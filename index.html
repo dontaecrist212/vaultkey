@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultKey — Password Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--accent3:#ffb347;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);}
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,69,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,69,0,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+  body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 60% 20%,rgba(255,69,0,0.06) 0%,transparent 50%),radial-gradient(ellipse at 20% 80%,rgba(255,140,0,0.04) 0%,transparent 40%);pointer-events:none;z-index:0;animation:pulse 8s ease-in-out infinite alternate;}
+  @keyframes pulse{from{opacity:0.5}to{opacity:1}}
+  header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(12,12,18,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);}
+  header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);}
+  .logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px var(--glow),0 0 40px rgba(255,69,0,0.2);}
+  .logo span{color:var(--accent2);}
+  .logo-sub{font-size:9px;letter-spacing:6px;color:var(--muted);display:block;margin-top:-2px;font-family:'Orbitron',monospace;}
+  .header-right{display:flex;gap:10px;align-items:center;}
+  .sys-status{font-size:11px;font-family:'Orbitron',monospace;color:var(--accent2);letter-spacing:1px;border:1px solid rgba(255,140,0,0.3);padding:4px 10px;border-radius:2px;animation:blink 2s infinite;}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
+  .btn{padding:10px 20px;border-radius:2px;border:none;cursor:pointer;font-family:'Orbitron',monospace;font-size:11px;font-weight:600;letter-spacing:2px;transition:all 0.2s;position:relative;overflow:hidden;text-transform:uppercase;}
+  .btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:left 0.4s;}
+  .btn:hover::before{left:100%;}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#cc3700);color:#fff;box-shadow:0 0 15px var(--glow),inset 0 1px 0 rgba(255,255,255,0.1);border:1px solid rgba(255,100,0,0.5);}
+  .btn-primary:hover{box-shadow:0 0 25px var(--glow),0 0 50px rgba(255,69,0,0.2);transform:translateY(-1px);}
+  .btn-gen{background:transparent;color:var(--accent2);border:1px solid rgba(255,140,0,0.4);}
+  .btn-gen:hover{background:rgba(255,140,0,0.1);box-shadow:0 0 20px rgba(255,140,0,0.3);border-color:var(--accent2);}
+  .btn-sm{padding:5px 12px;font-size:10px;letter-spacing:1px;}
+  .btn-danger{background:transparent;border:1px solid rgba(255,32,32,0.4);color:var(--danger);}
+  .btn-danger:hover{background:rgba(255,32,32,0.15);}
+  .btn-edit{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-edit:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);}
+  .btn-cancel:hover{border-color:var(--muted);color:var(--text);}
+  .container{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1;}
+  .stats{display:flex;gap:16px;margin-bottom:2rem;flex-wrap:wrap;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 24px;flex:1;min-width:140px;position:relative;overflow:hidden;}
+  .stat::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--accent),var(--accent2));}
+  .stat::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--accent),transparent);}
+  .stat-num{font-family:'Orbitron',monospace;font-size:28px;font-weight:700;color:var(--accent);text-shadow:0 0 15px var(--glow);}
+  .stat-label{font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+  .top-bar{display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap;align-items:center;}
+  .search-wrap{flex:1;min-width:200px;position:relative;}
+  .search-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:10px 16px 10px 44px;color:var(--text);font-size:14px;font-family:'Rajdhani',sans-serif;font-weight:500;outline:none;transition:all 0.2s;letter-spacing:1px;}
+  .search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 15px rgba(255,69,0,0.2);background:var(--surface2);}
+  .search-wrap input::placeholder{color:var(--muted);}
+  .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:16px;}
+  .count-badge{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:4px 14px;font-size:11px;color:var(--accent2);font-family:'Orbitron',monospace;letter-spacing:1px;}
+
+  /* CATEGORY FILTER BAR */
+  .cat-bar{display:flex;gap:8px;margin-bottom:2rem;flex-wrap:wrap;align-items:center;}
+  .cat-label{font-size:10px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:2px;margin-right:4px;}
+  .cat-filter{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:6px 14px;font-size:11px;font-family:'Orbitron',monospace;color:var(--muted);cursor:pointer;letter-spacing:1px;transition:all 0.2s;text-transform:uppercase;}
+  .cat-filter:hover{border-color:var(--accent2);color:var(--accent2);}
+  .cat-filter.active{background:rgba(255,69,0,0.15);border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(255,69,0,0.2);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.4rem;position:relative;overflow:hidden;transition:all 0.25s;}
+  .card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);opacity:0;transition:opacity 0.3s;}
+  .card::after{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:linear-gradient(180deg,var(--accent),transparent);opacity:0;transition:opacity 0.3s;}
+  .card:hover{border-color:rgba(255,69,0,0.4);box-shadow:0 0 20px rgba(255,69,0,0.1),0 4px 20px rgba(0,0,0,0.5);transform:translateY(-3px);}
+  .card:hover::before,.card:hover::after{opacity:1;}
+  .card-corner{position:absolute;top:8px;right:8px;width:12px;height:12px;border-top:1px solid var(--accent);border-right:1px solid var(--accent);opacity:0.5;}
+  .card-corner-bl{position:absolute;bottom:8px;left:8px;width:12px;height:12px;border-bottom:1px solid var(--accent2);border-left:1px solid var(--accent2);opacity:0.3;}
+  .card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;}
+  .card-site{font-family:'Orbitron',monospace;font-size:11px;color:var(--accent2);letter-spacing:3px;text-transform:uppercase;}
+  .cat-tag{font-size:10px;font-family:'Orbitron',monospace;padding:2px 8px;border-radius:2px;letter-spacing:1px;text-transform:uppercase;border:1px solid;}
+  .cat-tag.Social{color:#ff8c00;border-color:rgba(255,140,0,0.4);background:rgba(255,140,0,0.1);}
+  .cat-tag.Work{color:#ff4500;border-color:rgba(255,69,0,0.4);background:rgba(255,69,0,0.1);}
+  .cat-tag.Banking{color:#ffb347;border-color:rgba(255,179,71,0.4);background:rgba(255,179,71,0.1);}
+  .cat-tag.Shopping{color:#ff6b35;border-color:rgba(255,107,53,0.4);background:rgba(255,107,53,0.1);}
+  .cat-tag.Gaming{color:#ff3d00;border-color:rgba(255,61,0,0.4);background:rgba(255,61,0,0.1);}
+  .cat-tag.General{color:#7a5a3a;border-color:rgba(122,90,58,0.4);background:rgba(122,90,58,0.1);}
+  .cat-tag.Email{color:#ffa500;border-color:rgba(255,165,0,0.4);background:rgba(255,165,0,0.1);}
+  .cat-tag.Other{color:#7a5a3a;border-color:rgba(122,90,58,0.4);background:rgba(122,90,58,0.1);}
+  .card-user{font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px;letter-spacing:1px;}
+  .card-pass{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:8px 12px;margin-bottom:12px;}
+  .card-pass-text{font-family:'Orbitron',monospace;font-size:12px;color:var(--muted);flex:1;word-break:break-all;letter-spacing:2px;}
+  .card-pass-text.revealed{color:var(--accent2);text-shadow:0 0 8px rgba(255,140,0,0.4);}
+  .eye-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:15px;transition:all 0.15s;padding:0 2px;}
+  .eye-btn:hover{color:var(--accent);}
+  .copy-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 6px;border-radius:2px;transition:all 0.15s;}
+  .copy-btn:hover{color:var(--accent2);background:rgba(255,140,0,0.1);}
+  .card-notes{font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic;letter-spacing:1px;}
+  .card-actions{display:flex;gap:8px;}
+  .card-date{font-size:10px;color:var(--muted);margin-top:10px;font-family:'Orbitron',monospace;letter-spacing:1px;opacity:0.6;}
+  .empty{text-align:center;padding:5rem 2rem;color:var(--muted);}
+  .empty-icon{font-size:56px;margin-bottom:1rem;filter:drop-shadow(0 0 20px var(--glow));}
+  .empty h3{font-family:'Orbitron',monospace;font-size:16px;margin-bottom:8px;color:var(--accent);letter-spacing:3px;}
+  .empty p{font-size:14px;letter-spacing:1px;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:2px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;animation:slideUp 0.25s ease;box-shadow:0 0 40px rgba(255,69,0,0.15),0 20px 60px rgba(0,0,0,0.8);}
+  .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);}
+  .modal-corner-tr{position:absolute;top:8px;right:8px;width:16px;height:16px;border-top:1px solid var(--accent);border-right:1px solid var(--accent);opacity:0.6;}
+  .modal-corner-bl{position:absolute;bottom:8px;left:8px;width:16px;height:16px;border-bottom:1px solid var(--accent2);border-left:1px solid var(--accent2);opacity:0.4;}
+  @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  .modal h2{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--accent);margin-bottom:1.5rem;letter-spacing:3px;text-shadow:0 0 15px var(--glow);}
+  .form-group{margin-bottom:1.1rem;}
+  label{display:block;font-size:10px;color:var(--accent2);margin-bottom:6px;text-transform:uppercase;letter-spacing:3px;font-family:'Orbitron',monospace;}
+  input[type=text],input[type=password],textarea,select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'Rajdhani',sans-serif;font-weight:500;outline:none;transition:all 0.2s;letter-spacing:1px;}
+  input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 12px rgba(255,69,0,0.2);background:#0f0f18;}
+  select option{background:var(--surface2);color:var(--text);}
+  textarea{resize:vertical;min-height:70px;}
+  .pass-input-wrap{position:relative;}
+  .pass-input-wrap input{padding-right:80px;}
+  .pass-actions{position:absolute;right:8px;top:50%;transform:translateY(-50%);display:flex;gap:4px;}
+  .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:1.5rem;}
+  .gen-result{background:var(--surface2);border:1px solid rgba(255,140,0,0.3);border-radius:2px;padding:14px 16px;font-family:'Orbitron',monospace;font-size:13px;color:var(--accent2);margin:1rem 0;word-break:break-all;min-height:48px;text-shadow:0 0 10px rgba(255,140,0,0.4);letter-spacing:2px;}
+  .gen-options{display:flex;flex-wrap:wrap;gap:16px;margin:1rem 0;}
+  .gen-opt{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;letter-spacing:1px;}
+  .gen-opt input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;}
+  .gen-opt input[type=range]{accent-color:var(--accent);width:120px;}
+  .strength-wrap{margin-top:8px;}
+  .strength-label{font-size:10px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:2px;margin-bottom:4px;}
+  .strength-bar-bg{background:var(--surface2);height:4px;border-radius:99px;overflow:hidden;}
+  .strength-bar{height:4px;border-radius:99px;width:0%;transition:all 0.4s;}
+  .toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface2);border:1px solid var(--accent);border-radius:2px;padding:12px 20px;color:var(--accent2);font-size:13px;font-family:'Orbitron',monospace;letter-spacing:1px;z-index:999;transform:translateY(20px);opacity:0;transition:all 0.3s;pointer-events:none;box-shadow:0 0 20px var(--glow);}
+  .toast.show{transform:translateY(0);opacity:1;}
+  .scanline{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,69,0,0.01) 2px,rgba(255,69,0,0.01) 4px);pointer-events:none;z-index:999;}
+</style>
+</head>
+<body>
+<div class="scanline"></div>
+<header>
+  <div class="logo">VAULT<span>KEY</span><span class="logo-sub">SECURE ACCESS SYSTEM v2.0</span></div>
+  <div class="header-right">
+    <div class="sys-status">● SYSTEM ONLINE</div>
+    <button class="btn btn-gen" onclick="openGenerator()">⚡ GENERATE</button>
+    <button class="btn btn-primary" onclick="openAdd()">+ NEW ENTRY</button>
+  </div>
+</header>
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="stat-num" id="total-count">0</div><div class="stat-label">Total Entries</div></div>
+    <div class="stat"><div class="stat-num" id="site-count">0</div><div class="stat-label">Unique Sites</div></div>
+    <div class="stat"><div class="stat-num" id="cat-count">0</div><div class="stat-label">Categories</div></div>
+  </div>
+  <div class="top-bar">
+    <div class="search-wrap">
+      <span class="search-icon">◈</span>
+      <input type="text" id="search" placeholder="SEARCH ENCRYPTED VAULT..." oninput="filterEntries()" />
+    </div>
+    <span class="count-badge" id="result-count">0 RECORDS</span>
+  </div>
+  <div class="cat-bar">
+    <span class="cat-label">FILTER:</span>
+    <div id="cat-filters"></div>
+  </div>
+  <div class="grid" id="cards-grid"></div>
+  <div class="empty" id="empty-state" style="display:none">
+    <div class="empty-icon">🔐</div>
+    <h3>VAULT IS EMPTY</h3>
+    <p>Initialize your first encrypted entry to begin.</p>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="entry-modal">
+  <div class="modal">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2 id="modal-title">// NEW ENTRY</h2>
+    <input type="hidden" id="edit-id" />
+    <div class="form-group"><label>Target System / Site</label><input type="text" id="f-site" placeholder="e.g. gmail.com" /></div>
+    <div class="form-group"><label>Access ID / Username</label><input type="text" id="f-user" placeholder="you@example.com" /></div>
+    <div class="form-group">
+      <label>Authorization Key / Password</label>
+      <div class="pass-input-wrap">
+        <input type="password" id="f-pass" placeholder="Enter password" />
+        <div class="pass-actions">
+          <button class="eye-btn" onclick="toggleFieldPass('f-pass')">👁</button>
+          <button class="copy-btn" onclick="quickFillGen()" title="Generate">⚡</button>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Category</label>
+      <select id="f-category">
+        <option value="General">General</option>
+        <option value="Work">Work</option>
+        <option value="Social">Social</option>
+        <option value="Banking">Banking</option>
+        <option value="Email">Email</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Gaming">Gaming</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Intel / Notes</label><textarea id="f-notes" placeholder="Additional information..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">ABORT</button>
+      <button class="btn btn-primary" onclick="saveEntry()">ENCRYPT & SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- GENERATOR MODAL -->
+<div class="modal-overlay" id="gen-modal">
+  <div class="modal">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// KEY GENERATOR</h2>
+    <div class="gen-result" id="gen-output">AWAITING GENERATION...</div>
+    <div class="gen-options">
+      <label class="gen-opt"><input type="checkbox" id="g-upper" checked /> UPPERCASE</label>
+      <label class="gen-opt"><input type="checkbox" id="g-lower" checked /> LOWERCASE</label>
+      <label class="gen-opt"><input type="checkbox" id="g-nums" checked /> NUMERALS</label>
+      <label class="gen-opt"><input type="checkbox" id="g-syms" checked /> SYMBOLS</label>
+    </div>
+    <div class="gen-opt" style="margin-bottom:1rem;">
+      <span style="font-size:11px;color:var(--muted);font-family:Orbitron,monospace;letter-spacing:2px;">LENGTH:</span>
+      <input type="range" id="g-len" min="8" max="32" value="16" oninput="document.getElementById('g-len-val').textContent=this.value;generatePassword()" />
+      <span style="font-family:Orbitron,monospace;font-size:13px;color:var(--accent);min-width:24px;" id="g-len-val">16</span>
+    </div>
+    <div class="strength-wrap">
+      <div class="strength-label">ENCRYPTION STRENGTH</div>
+      <div class="strength-bar-bg"><div class="strength-bar" id="strength-bar"></div></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="document.getElementById('gen-modal').classList.remove('open')">CLOSE</button>
+      <button class="btn btn-edit btn-sm" onclick="copyGenerated()">📋 COPY KEY</button>
+      <button class="btn btn-primary" onclick="generatePassword()">GENERATE ↻</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const CATEGORIES = ['General','Work','Social','Banking','Email','Shopping','Gaming','Other'];
+let allEntries = [];
+let activeCategory = 'All';
+
+async function loadAll() {
+  const res = await fetch('/api/passwords');
+  allEntries = await res.json();
+  updateStats();
+  renderCatFilters();
+  filterEntries();
+}
+
+function updateStats() {
+  document.getElementById('total-count').textContent = allEntries.length;
+  document.getElementById('site-count').textContent = new Set(allEntries.map(d=>d.site)).size;
+  document.getElementById('cat-count').textContent = new Set(allEntries.map(d=>d.category).filter(Boolean)).size;
+}
+
+function renderCatFilters() {
+  const used = ['All', ...new Set(allEntries.map(d=>d.category).filter(Boolean))];
+  const wrap = document.getElementById('cat-filters');
+  wrap.style.display='flex'; wrap.style.gap='8px'; wrap.style.flexWrap='wrap';
+  wrap.innerHTML = used.map(c => `
+    <button class="cat-filter ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>
+  `).join('');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  renderCatFilters();
+  filterEntries();
+}
+
+function filterEntries() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let filtered = allEntries;
+  if (activeCategory !== 'All') filtered = filtered.filter(e => e.category === activeCategory);
+  if (q) filtered = filtered.filter(e => e.site.toLowerCase().includes(q) || e.username.toLowerCase().includes(q));
+  renderCards(filtered);
+  document.getElementById('result-count').textContent = `${filtered.length} RECORDS`;
+}
+
+function renderCards(entries) {
+  const grid = document.getElementById('cards-grid');
+  const empty = document.getElementById('empty-state');
+  if (!entries.length) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  grid.innerHTML = entries.map(e => `
+    <div class="card" id="card-${e.id}">
+      <div class="card-corner"></div><div class="card-corner-bl"></div>
+      <div class="card-header">
+        <div class="card-site">${esc(e.site)}</div>
+        <span class="cat-tag ${esc(e.category||'General')}">${esc(e.category||'General')}</span>
+      </div>
+      <div class="card-user">${esc(e.username)}</div>
+      <div class="card-pass">
+        <span class="card-pass-text" id="pw-${e.id}">● ● ● ● ● ● ● ●</span>
+        <button class="eye-btn" onclick="togglePass(${e.id})">👁</button>
+        <button class="copy-btn" onclick="copyPass(${e.id})">📋</button>
+      </div>
+      ${e.notes?`<div class="card-notes">${esc(e.notes)}</div>`:''}
+      <div class="card-actions">
+        <button class="btn btn-sm btn-edit" onclick="openEdit(${e.id})">EDIT</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteEntry(${e.id})">DELETE</button>
+      </div>
+      <div class="card-date">LOGGED: ${new Date(e.created_at).toLocaleDateString()}</div>
+    </div>`).join('');
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+async function togglePass(id){
+  const el=document.getElementById(`pw-${id}`);
+  if(el.classList.contains('revealed')){el.textContent='● ● ● ● ● ● ● ●';el.classList.remove('revealed');return;}
+  const data=await(await fetch(`/api/passwords/${id}`)).json();
+  el.textContent=data.password;el.classList.add('revealed');
+}
+
+async function copyPass(id){
+  const data=await(await fetch(`/api/passwords/${id}`)).json();
+  navigator.clipboard.writeText(data.password).then(()=>showToast('KEY COPIED TO CLIPBOARD'));
+}
+
+function openAdd(){
+  document.getElementById('modal-title').textContent='// NEW ENTRY';
+  document.getElementById('edit-id').value='';
+  ['f-site','f-user','f-pass','f-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-category').value='General';
+  document.getElementById('entry-modal').classList.add('open');
+}
+
+async function openEdit(id){
+  const d=await(await fetch(`/api/passwords/${id}`)).json();
+  document.getElementById('modal-title').textContent='// MODIFY ENTRY';
+  document.getElementById('edit-id').value=id;
+  document.getElementById('f-site').value=d.site;
+  document.getElementById('f-user').value=d.username;
+  document.getElementById('f-pass').value=d.password;
+  document.getElementById('f-notes').value=d.notes||'';
+  document.getElementById('f-category').value=d.category||'General';
+  document.getElementById('entry-modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('entry-modal').classList.remove('open');}
+
+async function saveEntry(){
+  const id=document.getElementById('edit-id').value;
+  const body={
+    site:document.getElementById('f-site').value.trim(),
+    username:document.getElementById('f-user').value.trim(),
+    password:document.getElementById('f-pass').value,
+    notes:document.getElementById('f-notes').value.trim(),
+    category:document.getElementById('f-category').value
+  };
+  if(!body.site||!body.username||!body.password){showToast('ALL FIELDS REQUIRED',true);return;}
+  await fetch(id?`/api/passwords/${id}`:'/api/passwords',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  closeModal();showToast(id?'ENTRY UPDATED':'ENTRY ENCRYPTED & SAVED');loadAll();
+}
+
+async function deleteEntry(id){
+  if(!confirm('CONFIRM DELETE — This cannot be undone.'))return;
+  await fetch(`/api/passwords/${id}`,{method:'DELETE'});
+  showToast('ENTRY PURGED FROM VAULT');loadAll();
+}
+
+function toggleFieldPass(fieldId){const f=document.getElementById(fieldId);f.type=f.type==='password'?'text':'password';}
+
+let lastGen='';
+function openGenerator(){document.getElementById('gen-modal').classList.add('open');generatePassword();}
+function generatePassword(){
+  const upper=document.getElementById('g-upper').checked;
+  const lower=document.getElementById('g-lower').checked;
+  const nums=document.getElementById('g-nums').checked;
+  const syms=document.getElementById('g-syms').checked;
+  const len=parseInt(document.getElementById('g-len').value);
+  let chars='';
+  if(upper)chars+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  if(lower)chars+='abcdefghijklmnopqrstuvwxyz';
+  if(nums)chars+='0123456789';
+  if(syms)chars+='!@#$%^&*()_+-=[]{}|;:,.<>?';
+  if(!chars){document.getElementById('gen-output').textContent='SELECT OPTIONS';return;}
+  let pw='';for(let i=0;i<len;i++)pw+=chars[Math.floor(Math.random()*chars.length)];
+  lastGen=pw;document.getElementById('gen-output').textContent=pw;updateStrength(pw);
+}
+function updateStrength(pw){
+  let s=0;
+  if(pw.length>=12)s++;if(pw.length>=16)s++;
+  if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
+  const colors=['#ff2020','#ff4500','#ff8c00','#ffb347','#ff8c00'];
+  const widths=['20%','40%','60%','80%','100%'];
+  const bar=document.getElementById('strength-bar');
+  bar.style.background=colors[Math.min(s,4)];bar.style.width=widths[Math.min(s,4)];
+  bar.style.boxShadow=`0 0 8px ${colors[Math.min(s,4)]}`;
+}
+function copyGenerated(){if(!lastGen)return;navigator.clipboard.writeText(lastGen).then(()=>showToast('KEY COPIED TO CLIPBOARD'));}
+function quickFillGen(){
+  const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+  let pw='';for(let i=0;i<16;i++)pw+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('f-pass').value=pw;document.getElementById('f-pass').type='text';
+  showToast('ACCESS KEY GENERATED');
+}
+function showToast(msg,isError=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.style.borderColor=isError?'var(--danger)':'var(--accent)';
+  t.style.color=isError?'var(--danger)':'var(--accent2)';
+  t.style.boxShadow=isError?'0 0 20px rgba(255,32,32,0.4)':'0 0 20px var(--glow)';
+  t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
+}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+loadAll();
+</script>
+</body>
+</html>
