@@ -1,6 +1,2 @@
-<<<<<<< HEAD
 flask
-=======
-flask
->>>>>>> 4a6cc42e8117b6aaa008bf0c4dddc21ef14f2f15
 gunicorn
