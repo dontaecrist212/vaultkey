@@ -6,27 +6,46 @@
 <title>VaultKey — Password Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--accent3:#ffb347;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);}
+  :root{--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);}
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,69,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,69,0,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
-  body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 60% 20%,rgba(255,69,0,0.06) 0%,transparent 50%),radial-gradient(ellipse at 20% 80%,rgba(255,140,0,0.04) 0%,transparent 40%);pointer-events:none;z-index:0;animation:pulse 8s ease-in-out infinite alternate;}
+  body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 60% 20%,rgba(255,69,0,0.06) 0%,transparent 50%);pointer-events:none;z-index:0;animation:pulse 8s ease-in-out infinite alternate;}
   @keyframes pulse{from{opacity:0.5}to{opacity:1}}
+
+  /* AUTH SCREEN */
+  .auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;background:var(--bg);}
+  .auth-box{background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:4px;padding:2.5rem;width:100%;max-width:420px;position:relative;box-shadow:0 0 60px rgba(255,69,0,0.1);}
+  .auth-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);}
+  .auth-corner-tr{position:absolute;top:8px;right:8px;width:16px;height:16px;border-top:1px solid var(--accent);border-right:1px solid var(--accent);opacity:0.6;}
+  .auth-corner-bl{position:absolute;bottom:8px;left:8px;width:16px;height:16px;border-bottom:1px solid var(--accent2);border-left:1px solid var(--accent2);opacity:0.4;}
+  .auth-logo{font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px var(--glow);text-align:center;margin-bottom:4px;}
+  .auth-logo span{color:var(--accent2);}
+  .auth-sub{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:6px;color:var(--muted);text-align:center;margin-bottom:2rem;}
+  .auth-tabs{display:flex;gap:0;margin-bottom:1.5rem;border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+  .auth-tab{flex:1;padding:10px;text-align:center;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:2px;cursor:pointer;background:transparent;border:none;color:var(--muted);transition:all 0.2s;}
+  .auth-tab.active{background:rgba(255,69,0,0.15);color:var(--accent);border-bottom:2px solid var(--accent);}
+  .auth-error{background:rgba(255,32,32,0.1);border:1px solid rgba(255,32,32,0.3);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--danger);margin-bottom:1rem;display:none;}
+  .auth-success{background:rgba(255,140,0,0.1);border:1px solid rgba(255,140,0,0.3);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--accent2);margin-bottom:1rem;display:none;}
+
+  /* HEADER */
   header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(12,12,18,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);}
   header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);}
-  .logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px var(--glow),0 0 40px rgba(255,69,0,0.2);}
+  .logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px var(--glow);}
   .logo span{color:var(--accent2);}
   .logo-sub{font-size:9px;letter-spacing:6px;color:var(--muted);display:block;margin-top:-2px;font-family:'Orbitron',monospace;}
   .header-right{display:flex;gap:10px;align-items:center;}
+  .user-badge{font-size:11px;font-family:'Orbitron',monospace;color:var(--accent2);letter-spacing:1px;border:1px solid rgba(255,140,0,0.3);padding:4px 10px;border-radius:2px;}
   .sys-status{font-size:11px;font-family:'Orbitron',monospace;color:var(--accent2);letter-spacing:1px;border:1px solid rgba(255,140,0,0.3);padding:4px 10px;border-radius:2px;animation:blink 2s infinite;}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
+
+  /* BUTTONS */
   .btn{padding:10px 20px;border-radius:2px;border:none;cursor:pointer;font-family:'Orbitron',monospace;font-size:11px;font-weight:600;letter-spacing:2px;transition:all 0.2s;position:relative;overflow:hidden;text-transform:uppercase;}
-  .btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);transition:left 0.4s;}
-  .btn:hover::before{left:100%;}
-  .btn-primary{background:linear-gradient(135deg,var(--accent),#cc3700);color:#fff;box-shadow:0 0 15px var(--glow),inset 0 1px 0 rgba(255,255,255,0.1);border:1px solid rgba(255,100,0,0.5);}
-  .btn-primary:hover{box-shadow:0 0 25px var(--glow),0 0 50px rgba(255,69,0,0.2);transform:translateY(-1px);}
+  .btn-primary{background:linear-gradient(135deg,var(--accent),#cc3700);color:#fff;box-shadow:0 0 15px var(--glow);border:1px solid rgba(255,100,0,0.5);}
+  .btn-primary:hover{box-shadow:0 0 25px var(--glow);transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
   .btn-gen{background:transparent;color:var(--accent2);border:1px solid rgba(255,140,0,0.4);}
-  .btn-gen:hover{background:rgba(255,140,0,0.1);box-shadow:0 0 20px rgba(255,140,0,0.3);border-color:var(--accent2);}
+  .btn-gen:hover{background:rgba(255,140,0,0.1);border-color:var(--accent2);}
   .btn-sm{padding:5px 12px;font-size:10px;letter-spacing:1px;}
   .btn-danger{background:transparent;border:1px solid rgba(255,32,32,0.4);color:var(--danger);}
   .btn-danger:hover{background:rgba(255,32,32,0.15);}
@@ -34,6 +53,11 @@
   .btn-edit:hover{border-color:var(--accent);color:var(--accent);}
   .btn-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);}
   .btn-cancel:hover{border-color:var(--muted);color:var(--text);}
+  .btn-logout{background:transparent;border:1px solid rgba(255,32,32,0.3);color:var(--danger);font-size:10px;padding:6px 12px;}
+  .btn-logout:hover{background:rgba(255,32,32,0.1);}
+
+  /* MAIN APP */
+  .app-screen{display:none;}
   .container{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1;}
   .stats{display:flex;gap:16px;margin-bottom:2rem;flex-wrap:wrap;}
   .stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px 24px;flex:1;min-width:140px;position:relative;overflow:hidden;}
@@ -48,19 +72,16 @@
   .search-wrap input::placeholder{color:var(--muted);}
   .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--accent);font-size:16px;}
   .count-badge{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:4px 14px;font-size:11px;color:var(--accent2);font-family:'Orbitron',monospace;letter-spacing:1px;}
-
-  /* CATEGORY FILTER BAR */
   .cat-bar{display:flex;gap:8px;margin-bottom:2rem;flex-wrap:wrap;align-items:center;}
   .cat-label{font-size:10px;font-family:'Orbitron',monospace;color:var(--muted);letter-spacing:2px;margin-right:4px;}
   .cat-filter{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:6px 14px;font-size:11px;font-family:'Orbitron',monospace;color:var(--muted);cursor:pointer;letter-spacing:1px;transition:all 0.2s;text-transform:uppercase;}
   .cat-filter:hover{border-color:var(--accent2);color:var(--accent2);}
-  .cat-filter.active{background:rgba(255,69,0,0.15);border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(255,69,0,0.2);}
-
+  .cat-filter.active{background:rgba(255,69,0,0.15);border-color:var(--accent);color:var(--accent);}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.4rem;position:relative;overflow:hidden;transition:all 0.25s;}
   .card::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);opacity:0;transition:opacity 0.3s;}
   .card::after{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:linear-gradient(180deg,var(--accent),transparent);opacity:0;transition:opacity 0.3s;}
-  .card:hover{border-color:rgba(255,69,0,0.4);box-shadow:0 0 20px rgba(255,69,0,0.1),0 4px 20px rgba(0,0,0,0.5);transform:translateY(-3px);}
+  .card:hover{border-color:rgba(255,69,0,0.4);box-shadow:0 0 20px rgba(255,69,0,0.1);transform:translateY(-3px);}
   .card:hover::before,.card:hover::after{opacity:1;}
   .card-corner{position:absolute;top:8px;right:8px;width:12px;height:12px;border-top:1px solid var(--accent);border-right:1px solid var(--accent);opacity:0.5;}
   .card-corner-bl{position:absolute;bottom:8px;left:8px;width:12px;height:12px;border-bottom:1px solid var(--accent2);border-left:1px solid var(--accent2);opacity:0.3;}
@@ -83,16 +104,18 @@
   .eye-btn:hover{color:var(--accent);}
   .copy-btn{background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px;padding:2px 6px;border-radius:2px;transition:all 0.15s;}
   .copy-btn:hover{color:var(--accent2);background:rgba(255,140,0,0.1);}
-  .card-notes{font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic;letter-spacing:1px;}
+  .card-notes{font-size:12px;color:var(--muted);margin-bottom:12px;font-style:italic;}
   .card-actions{display:flex;gap:8px;}
   .card-date{font-size:10px;color:var(--muted);margin-top:10px;font-family:'Orbitron',monospace;letter-spacing:1px;opacity:0.6;}
   .empty{text-align:center;padding:5rem 2rem;color:var(--muted);}
   .empty-icon{font-size:56px;margin-bottom:1rem;filter:drop-shadow(0 0 20px var(--glow));}
   .empty h3{font-family:'Orbitron',monospace;font-size:16px;margin-bottom:8px;color:var(--accent);letter-spacing:3px;}
   .empty p{font-size:14px;letter-spacing:1px;}
+
+  /* MODALS */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
   .modal-overlay.open{display:flex;}
-  .modal{background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:2px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;animation:slideUp 0.25s ease;box-shadow:0 0 40px rgba(255,69,0,0.15),0 20px 60px rgba(0,0,0,0.8);}
+  .modal{background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:2px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;animation:slideUp 0.25s ease;box-shadow:0 0 40px rgba(255,69,0,0.15);}
   .modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);}
   .modal-corner-tr{position:absolute;top:8px;right:8px;width:16px;height:16px;border-top:1px solid var(--accent);border-right:1px solid var(--accent);opacity:0.6;}
   .modal-corner-bl{position:absolute;bottom:8px;left:8px;width:16px;height:16px;border-bottom:1px solid var(--accent2);border-left:1px solid var(--accent2);opacity:0.4;}
@@ -124,40 +147,70 @@
 </head>
 <body>
 <div class="scanline"></div>
-<header>
-  <div class="logo">VAULT<span>KEY</span><span class="logo-sub">SECURE ACCESS SYSTEM v2.0</span></div>
-  <div class="header-right">
-    <div class="sys-status">● SYSTEM ONLINE</div>
-    <button class="btn btn-gen" onclick="openGenerator()">⚡ GENERATE</button>
-    <button class="btn btn-primary" onclick="openAdd()">+ NEW ENTRY</button>
-  </div>
-</header>
-<div class="container">
-  <div class="stats">
-    <div class="stat"><div class="stat-num" id="total-count">0</div><div class="stat-label">Total Entries</div></div>
-    <div class="stat"><div class="stat-num" id="site-count">0</div><div class="stat-label">Unique Sites</div></div>
-    <div class="stat"><div class="stat-num" id="cat-count">0</div><div class="stat-label">Categories</div></div>
-  </div>
-  <div class="top-bar">
-    <div class="search-wrap">
-      <span class="search-icon">◈</span>
-      <input type="text" id="search" placeholder="SEARCH ENCRYPTED VAULT..." oninput="filterEntries()" />
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-corner-tr"></div><div class="auth-corner-bl"></div>
+    <div class="auth-logo">VAULT<span>KEY</span></div>
+    <div class="auth-sub">SECURE ACCESS SYSTEM v2.0</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchTab('login')">LOGIN</button>
+      <button class="auth-tab" onclick="switchTab('register')">REGISTER</button>
     </div>
-    <span class="count-badge" id="result-count">0 RECORDS</span>
-  </div>
-  <div class="cat-bar">
-    <span class="cat-label">FILTER:</span>
-    <div id="cat-filters"></div>
-  </div>
-  <div class="grid" id="cards-grid"></div>
-  <div class="empty" id="empty-state" style="display:none">
-    <div class="empty-icon">🔐</div>
-    <h3>VAULT IS EMPTY</h3>
-    <p>Initialize your first encrypted entry to begin.</p>
+    <div class="auth-error" id="auth-error"></div>
+    <div class="auth-success" id="auth-success"></div>
+    <div class="form-group">
+      <label>Username</label>
+      <input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:0.5rem;" id="auth-btn" onclick="submitAuth()">ACCESS VAULT</button>
   </div>
 </div>
 
-<!-- ADD/EDIT MODAL -->
+<!-- MAIN APP -->
+<div class="app-screen" id="app-screen">
+  <header>
+    <div class="logo">VAULT<span>KEY</span><span class="logo-sub">SECURE ACCESS SYSTEM v2.0</span></div>
+    <div class="header-right">
+      <div class="sys-status">● ONLINE</div>
+      <div class="user-badge" id="user-badge">USER</div>
+      <button class="btn btn-logout" onclick="logout()">LOGOUT</button>
+      <button class="btn btn-gen" onclick="openGenerator()">⚡ GENERATE</button>
+      <button class="btn btn-primary" onclick="openAdd()">+ NEW ENTRY</button>
+    </div>
+  </header>
+  <div class="container">
+    <div class="stats">
+      <div class="stat"><div class="stat-num" id="total-count">0</div><div class="stat-label">Total Entries</div></div>
+      <div class="stat"><div class="stat-num" id="site-count">0</div><div class="stat-label">Unique Sites</div></div>
+      <div class="stat"><div class="stat-num" id="cat-count">0</div><div class="stat-label">Categories</div></div>
+    </div>
+    <div class="top-bar">
+      <div class="search-wrap">
+        <span class="search-icon">◈</span>
+        <input type="text" id="search" placeholder="SEARCH ENCRYPTED VAULT..." oninput="filterEntries()" />
+      </div>
+      <span class="count-badge" id="result-count">0 RECORDS</span>
+    </div>
+    <div class="cat-bar">
+      <span class="cat-label">FILTER:</span>
+      <div id="cat-filters" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="grid" id="cards-grid"></div>
+    <div class="empty" id="empty-state" style="display:none">
+      <div class="empty-icon">🔐</div>
+      <h3>VAULT IS EMPTY</h3>
+      <p>Initialize your first encrypted entry to begin.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ENTRY MODAL -->
 <div class="modal-overlay" id="entry-modal">
   <div class="modal">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
@@ -227,54 +280,104 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const CATEGORIES = ['General','Work','Social','Banking','Email','Shopping','Gaming','Other'];
-let allEntries = [];
-let activeCategory = 'All';
+let allEntries=[], activeCategory='All', currentTab='login';
 
-async function loadAll() {
-  const res = await fetch('/api/passwords');
-  allEntries = await res.json();
-  updateStats();
-  renderCatFilters();
-  filterEntries();
+// CHECK IF ALREADY LOGGED IN
+async function checkSession(){
+  const res=await fetch('/api/me');
+  const data=await res.json();
+  if(data.logged_in){showApp(data.username);}
+  else{showAuth();}
 }
 
-function updateStats() {
-  document.getElementById('total-count').textContent = allEntries.length;
-  document.getElementById('site-count').textContent = new Set(allEntries.map(d=>d.site)).size;
-  document.getElementById('cat-count').textContent = new Set(allEntries.map(d=>d.category).filter(Boolean)).size;
+function showAuth(){
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('app-screen').style.display='none';
 }
 
-function renderCatFilters() {
-  const used = ['All', ...new Set(allEntries.map(d=>d.category).filter(Boolean))];
-  const wrap = document.getElementById('cat-filters');
-  wrap.style.display='flex'; wrap.style.gap='8px'; wrap.style.flexWrap='wrap';
-  wrap.innerHTML = used.map(c => `
-    <button class="cat-filter ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>
-  `).join('');
+function showApp(username){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  document.getElementById('user-badge').textContent='▶ '+username.toUpperCase();
+  loadAll();
 }
 
-function setCategory(cat) {
-  activeCategory = cat;
-  renderCatFilters();
-  filterEntries();
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.getElementById('auth-btn').textContent=tab==='login'?'ACCESS VAULT':'CREATE ACCOUNT';
+  document.getElementById('auth-error').style.display='none';
+  document.getElementById('auth-success').style.display='none';
 }
 
-function filterEntries() {
-  const q = document.getElementById('search').value.toLowerCase();
-  let filtered = allEntries;
-  if (activeCategory !== 'All') filtered = filtered.filter(e => e.category === activeCategory);
-  if (q) filtered = filtered.filter(e => e.site.toLowerCase().includes(q) || e.username.toLowerCase().includes(q));
-  renderCards(filtered);
-  document.getElementById('result-count').textContent = `${filtered.length} RECORDS`;
+async function submitAuth(){
+  const username=document.getElementById('auth-username').value.trim();
+  const password=document.getElementById('auth-password').value;
+  const errEl=document.getElementById('auth-error');
+  const sucEl=document.getElementById('auth-success');
+  errEl.style.display='none'; sucEl.style.display='none';
+  if(!username||!password){errEl.textContent='All fields required';errEl.style.display='block';return;}
+  const url=currentTab==='login'?'/api/login':'/api/register';
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  const data=await res.json();
+  if(!res.ok){errEl.textContent=data.error;errEl.style.display='block';return;}
+  if(currentTab==='register'){
+    sucEl.textContent='Account created! Logging you in...';sucEl.style.display='block';
+    setTimeout(()=>submitLogin(username,password),1000);
+  } else {
+    showApp(data.username);
+  }
 }
 
-function renderCards(entries) {
-  const grid = document.getElementById('cards-grid');
-  const empty = document.getElementById('empty-state');
-  if (!entries.length) { grid.innerHTML=''; empty.style.display='block'; return; }
+async function submitLogin(username,password){
+  const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+  const data=await res.json();
+  if(res.ok) showApp(data.username);
+}
+
+async function logout(){
+  await fetch('/api/logout',{method:'POST'});
+  showAuth();
+  document.getElementById('auth-username').value='';
+  document.getElementById('auth-password').value='';
+}
+
+async function loadAll(){
+  const res=await fetch('/api/passwords');
+  if(res.status===401){showAuth();return;}
+  allEntries=await res.json();
+  updateStats();renderCatFilters();filterEntries();
+}
+
+function updateStats(){
+  document.getElementById('total-count').textContent=allEntries.length;
+  document.getElementById('site-count').textContent=new Set(allEntries.map(d=>d.site)).size;
+  document.getElementById('cat-count').textContent=new Set(allEntries.map(d=>d.category).filter(Boolean)).size;
+}
+
+function renderCatFilters(){
+  const used=['All',...new Set(allEntries.map(d=>d.category).filter(Boolean))];
+  const wrap=document.getElementById('cat-filters');
+  wrap.innerHTML=used.map(c=>`<button class="cat-filter ${c===activeCategory?'active':''}" onclick="setCategory('${c}')">${c}</button>`).join('');
+}
+
+function setCategory(cat){activeCategory=cat;renderCatFilters();filterEntries();}
+
+function filterEntries(){
+  const q=document.getElementById('search').value.toLowerCase();
+  let f=allEntries;
+  if(activeCategory!=='All')f=f.filter(e=>e.category===activeCategory);
+  if(q)f=f.filter(e=>e.site.toLowerCase().includes(q)||e.username.toLowerCase().includes(q));
+  renderCards(f);
+  document.getElementById('result-count').textContent=`${f.length} RECORDS`;
+}
+
+function renderCards(entries){
+  const grid=document.getElementById('cards-grid');
+  const empty=document.getElementById('empty-state');
+  if(!entries.length){grid.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  grid.innerHTML = entries.map(e => `
+  grid.innerHTML=entries.map(e=>`
     <div class="card" id="card-${e.id}">
       <div class="card-corner"></div><div class="card-corner-bl"></div>
       <div class="card-header">
@@ -334,13 +437,7 @@ function closeModal(){document.getElementById('entry-modal').classList.remove('o
 
 async function saveEntry(){
   const id=document.getElementById('edit-id').value;
-  const body={
-    site:document.getElementById('f-site').value.trim(),
-    username:document.getElementById('f-user').value.trim(),
-    password:document.getElementById('f-pass').value,
-    notes:document.getElementById('f-notes').value.trim(),
-    category:document.getElementById('f-category').value
-  };
+  const body={site:document.getElementById('f-site').value.trim(),username:document.getElementById('f-user').value.trim(),password:document.getElementById('f-pass').value,notes:document.getElementById('f-notes').value.trim(),category:document.getElementById('f-category').value};
   if(!body.site||!body.username||!body.password){showToast('ALL FIELDS REQUIRED',true);return;}
   await fetch(id?`/api/passwords/${id}`:'/api/passwords',{method:id?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
   closeModal();showToast(id?'ENTRY UPDATED':'ENTRY ENCRYPTED & SAVED');loadAll();
@@ -357,29 +454,20 @@ function toggleFieldPass(fieldId){const f=document.getElementById(fieldId);f.typ
 let lastGen='';
 function openGenerator(){document.getElementById('gen-modal').classList.add('open');generatePassword();}
 function generatePassword(){
-  const upper=document.getElementById('g-upper').checked;
-  const lower=document.getElementById('g-lower').checked;
-  const nums=document.getElementById('g-nums').checked;
-  const syms=document.getElementById('g-syms').checked;
+  const upper=document.getElementById('g-upper').checked,lower=document.getElementById('g-lower').checked,nums=document.getElementById('g-nums').checked,syms=document.getElementById('g-syms').checked;
   const len=parseInt(document.getElementById('g-len').value);
   let chars='';
-  if(upper)chars+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  if(lower)chars+='abcdefghijklmnopqrstuvwxyz';
-  if(nums)chars+='0123456789';
-  if(syms)chars+='!@#$%^&*()_+-=[]{}|;:,.<>?';
+  if(upper)chars+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';if(lower)chars+='abcdefghijklmnopqrstuvwxyz';
+  if(nums)chars+='0123456789';if(syms)chars+='!@#$%^&*()_+-=[]{}|;:,.<>?';
   if(!chars){document.getElementById('gen-output').textContent='SELECT OPTIONS';return;}
   let pw='';for(let i=0;i<len;i++)pw+=chars[Math.floor(Math.random()*chars.length)];
   lastGen=pw;document.getElementById('gen-output').textContent=pw;updateStrength(pw);
 }
 function updateStrength(pw){
-  let s=0;
-  if(pw.length>=12)s++;if(pw.length>=16)s++;
-  if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
-  const colors=['#ff2020','#ff4500','#ff8c00','#ffb347','#ff8c00'];
-  const widths=['20%','40%','60%','80%','100%'];
+  let s=0;if(pw.length>=12)s++;if(pw.length>=16)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
+  const colors=['#ff2020','#ff4500','#ff8c00','#ffb347','#ff8c00'],widths=['20%','40%','60%','80%','100%'];
   const bar=document.getElementById('strength-bar');
   bar.style.background=colors[Math.min(s,4)];bar.style.width=widths[Math.min(s,4)];
-  bar.style.boxShadow=`0 0 8px ${colors[Math.min(s,4)]}`;
 }
 function copyGenerated(){if(!lastGen)return;navigator.clipboard.writeText(lastGen).then(()=>showToast('KEY COPIED TO CLIPBOARD'));}
 function quickFillGen(){
@@ -392,11 +480,10 @@ function showToast(msg,isError=false){
   const t=document.getElementById('toast');
   t.textContent=msg;t.style.borderColor=isError?'var(--danger)':'var(--accent)';
   t.style.color=isError?'var(--danger)':'var(--accent2)';
-  t.style.boxShadow=isError?'0 0 20px rgba(255,32,32,0.4)':'0 0 20px var(--glow)';
   t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
-loadAll();
+checkSession();
 </script>
 </body>
 </html>
