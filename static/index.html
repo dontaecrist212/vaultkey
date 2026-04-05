@@ -315,20 +315,19 @@ async function submitAuth(){
   const password=document.getElementById('auth-password').value;
   const errEl=document.getElementById('auth-error');
   const sucEl=document.getElementById('auth-success');
-  errEl.style.display='none'; sucEl.style.display='none';
+  errEl.style.display='none';sucEl.style.display='none';
   if(!username||!password){errEl.textContent='All fields required';errEl.style.display='block';return;}
   const url=currentTab==='login'?'/api/login':'/api/register';
   const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
   const data=await res.json();
   if(!res.ok){errEl.textContent=data.error;errEl.style.display='block';return;}
   if(currentTab==='register'){
-    sucEl.textContent='Account created! Logging you in...';sucEl.style.display='block';
-    setTimeout(()=>submitLogin(username,password),1000);
+    sucEl.textContent='Account created! Please log in.';sucEl.style.display='block';
+    switchTab('login');
   } else {
     showApp(data.username);
   }
 }
-
 async function submitLogin(username,password){
   const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
   const data=await res.json();
