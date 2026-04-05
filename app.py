@@ -166,6 +166,11 @@ def login():
     session['username'] = user['username']
     return jsonify({'message': 'Logged in!', 'username': user['username']})
 
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'message': 'Logged out'})
+
 @app.route('/api/verify-mfa', methods=['POST'])
 def verify_mfa():
     data = request.json

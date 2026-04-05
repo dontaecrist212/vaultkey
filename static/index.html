@@ -6,14 +6,54 @@
 <title>VaultKey — Password Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);}
+  :root{--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);--green:#00ff88;--yellow:#ffcc00;}
   *{margin:0;padding:0;box-sizing:border-box;}
   body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
   body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,69,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,69,0,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
   body::after{content:'';position:fixed;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(ellipse at 60% 20%,rgba(255,69,0,0.06) 0%,transparent 50%);pointer-events:none;z-index:0;animation:pulse 8s ease-in-out infinite alternate;}
   @keyframes pulse{from{opacity:0.5}to{opacity:1}}
 
-  /* AUTH SCREEN */
+  /* ===== LANDING PAGE ===== */
+  #landing-screen{position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;display:flex;flex-direction:column;}
+  .land-nav{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 2.5rem;border-bottom:1px solid rgba(255,69,0,0.15);position:sticky;top:0;background:rgba(5,5,8,0.95);backdrop-filter:blur(10px);z-index:10;}
+  .land-logo{font-family:'Orbitron',monospace;font-size:1.3rem;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px var(--glow);}
+  .land-logo span{color:var(--accent2);}
+  .land-nav-btns{display:flex;gap:10px;}
+  .land-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:5rem 2rem 3rem;position:relative;z-index:1;}
+  .land-badge{display:inline-block;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:4px;color:var(--accent2);border:1px solid rgba(255,140,0,0.3);padding:5px 16px;border-radius:2px;margin-bottom:2rem;background:rgba(255,140,0,0.05);}
+  .land-title{font-family:'Orbitron',monospace;font-size:clamp(2.5rem,8vw,6rem);font-weight:900;letter-spacing:6px;line-height:1;margin-bottom:1.5rem;}
+  .land-title .t1{color:var(--text);display:block;}
+  .land-title .t2{color:var(--accent);text-shadow:0 0 40px var(--glow),0 0 80px rgba(255,69,0,0.3);display:block;}
+  .land-sub{font-size:1.1rem;color:var(--muted);max-width:560px;line-height:1.8;margin-bottom:3rem;letter-spacing:1px;}
+  .land-cta{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:4rem;}
+  .land-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1100px;width:100%;margin:0 auto;padding:0 2rem 2rem;}
+  .feat-card{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:1.5rem;position:relative;overflow:hidden;transition:all 0.3s;}
+  .feat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);opacity:0;transition:opacity 0.3s;}
+  .feat-card:hover{border-color:rgba(255,69,0,0.4);transform:translateY(-4px);box-shadow:0 8px 30px rgba(255,69,0,0.1);}
+  .feat-card:hover::before{opacity:1;}
+  .feat-icon{font-size:2rem;margin-bottom:1rem;}
+  .feat-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:var(--accent2);margin-bottom:8px;text-transform:uppercase;}
+  .feat-desc{font-size:13px;color:var(--muted);line-height:1.7;letter-spacing:0.5px;}
+  .land-divider{border:none;border-top:1px solid var(--border);margin:0 2rem;}
+  .land-stats-bar{display:flex;justify-content:center;gap:4rem;padding:2.5rem 2rem;flex-wrap:wrap;}
+  .land-stat{text-align:center;}
+  .land-stat-num{font-family:'Orbitron',monospace;font-size:2rem;font-weight:700;color:var(--accent);text-shadow:0 0 15px var(--glow);}
+  .land-stat-label{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+  .land-footer{text-align:center;padding:1.5rem;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);border-top:1px solid var(--border);}
+  .land-footer span{color:var(--accent);}
+  /* animated vault ring */
+  .vault-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;pointer-events:none;opacity:0.04;z-index:0;}
+  .vault-ring circle{stroke:var(--accent);fill:none;stroke-dasharray:4 8;}
+  @keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes spin-rev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  .ring1{animation:spin-slow 20s linear infinite;transform-origin:center;}
+  .ring2{animation:spin-rev 14s linear infinite;transform-origin:center;}
+  /* floating particles */
+  .particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .particle{position:absolute;width:2px;height:2px;background:var(--accent);border-radius:50%;opacity:0;animation:floatUp 8s infinite;}
+  @keyframes floatUp{0%{opacity:0;transform:translateY(100px)}20%{opacity:0.6}80%{opacity:0.2}100%{opacity:0;transform:translateY(-200px)}}
+
+  /* ===== AUTH SCREEN ===== */
   .auth-screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:50;background:var(--bg);}
   .auth-box{background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:4px;padding:2.5rem;width:100%;max-width:420px;position:relative;box-shadow:0 0 60px rgba(255,69,0,0.1);}
   .auth-box::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);}
@@ -27,19 +67,22 @@
   .auth-tab.active{background:rgba(255,69,0,0.15);color:var(--accent);border-bottom:2px solid var(--accent);}
   .auth-error{background:rgba(255,32,32,0.1);border:1px solid rgba(255,32,32,0.3);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--danger);margin-bottom:1rem;display:none;}
   .auth-success{background:rgba(255,140,0,0.1);border:1px solid rgba(255,140,0,0.3);border-radius:2px;padding:8px 12px;font-size:13px;color:var(--accent2);margin-bottom:1rem;display:none;}
+  .back-to-landing{text-align:center;margin-top:1rem;}
+  .back-to-landing a{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-decoration:none;cursor:pointer;}
+  .back-to-landing a:hover{color:var(--accent2);}
 
-  /* HEADER */
-  header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(12,12,18,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);}
+  /* ===== HEADER ===== */
+  header{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(12,12,18,0.9);border-bottom:1px solid var(--border);backdrop-filter:blur(10px);flex-wrap:wrap;gap:8px;}
   header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);}
   .logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;letter-spacing:4px;color:var(--accent);text-shadow:0 0 20px var(--glow);}
   .logo span{color:var(--accent2);}
   .logo-sub{font-size:9px;letter-spacing:6px;color:var(--muted);display:block;margin-top:-2px;font-family:'Orbitron',monospace;}
-  .header-right{display:flex;gap:10px;align-items:center;}
+  .header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .user-badge{font-size:11px;font-family:'Orbitron',monospace;color:var(--accent2);letter-spacing:1px;border:1px solid rgba(255,140,0,0.3);padding:4px 10px;border-radius:2px;}
   .sys-status{font-size:11px;font-family:'Orbitron',monospace;color:var(--accent2);letter-spacing:1px;border:1px solid rgba(255,140,0,0.3);padding:4px 10px;border-radius:2px;animation:blink 2s infinite;}
   @keyframes blink{0%,100%{opacity:1}50%{opacity:0.5}}
 
-  /* BUTTONS */
+  /* ===== BUTTONS ===== */
   .btn{padding:10px 20px;border-radius:2px;border:none;cursor:pointer;font-family:'Orbitron',monospace;font-size:11px;font-weight:600;letter-spacing:2px;transition:all 0.2s;position:relative;overflow:hidden;text-transform:uppercase;}
   .btn-primary{background:linear-gradient(135deg,var(--accent),#cc3700);color:#fff;box-shadow:0 0 15px var(--glow);border:1px solid rgba(255,100,0,0.5);}
   .btn-primary:hover{box-shadow:0 0 25px var(--glow);transform:translateY(-1px);}
@@ -55,8 +98,10 @@
   .btn-cancel:hover{border-color:var(--muted);color:var(--text);}
   .btn-logout{background:transparent;border:1px solid rgba(255,32,32,0.3);color:var(--danger);font-size:10px;padding:6px 12px;}
   .btn-logout:hover{background:rgba(255,32,32,0.1);}
+  .btn-health{background:transparent;border:1px solid rgba(0,255,136,0.3);color:var(--green);font-size:10px;padding:6px 12px;}
+  .btn-health:hover{background:rgba(0,255,136,0.08);}
 
-  /* MAIN APP */
+  /* ===== MAIN APP ===== */
   .app-screen{display:none;}
   .container{max-width:1200px;margin:0 auto;padding:2rem;position:relative;z-index:1;}
   .stats{display:flex;gap:16px;margin-bottom:2rem;flex-wrap:wrap;}
@@ -111,8 +156,13 @@
   .empty-icon{font-size:56px;margin-bottom:1rem;filter:drop-shadow(0 0 20px var(--glow));}
   .empty h3{font-family:'Orbitron',monospace;font-size:16px;margin-bottom:8px;color:var(--accent);letter-spacing:3px;}
   .empty p{font-size:14px;letter-spacing:1px;}
+  /* breach badge on card */
+  .breach-badge{display:inline-flex;align-items:center;gap:4px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:2px;margin-top:6px;border:1px solid;}
+  .breach-badge.compromised{color:var(--danger);border-color:rgba(255,32,32,0.4);background:rgba(255,32,32,0.08);}
+  .breach-badge.safe{color:var(--green);border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.05);}
+  .breach-badge.checking{color:var(--muted);border-color:var(--border);background:transparent;}
 
-  /* MODALS */
+  /* ===== MODALS ===== */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px);}
   .modal-overlay.open{display:flex;}
   .modal{background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:2px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;position:relative;animation:slideUp 0.25s ease;box-shadow:0 0 40px rgba(255,69,0,0.15);}
@@ -143,13 +193,140 @@
   .toast{position:fixed;bottom:2rem;right:2rem;background:var(--surface2);border:1px solid var(--accent);border-radius:2px;padding:12px 20px;color:var(--accent2);font-size:13px;font-family:'Orbitron',monospace;letter-spacing:1px;z-index:999;transform:translateY(20px);opacity:0;transition:all 0.3s;pointer-events:none;box-shadow:0 0 20px var(--glow);}
   .toast.show{transform:translateY(0);opacity:1;}
   .scanline{position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(255,69,0,0.01) 2px,rgba(255,69,0,0.01) 4px);pointer-events:none;z-index:999;}
+
+  /* ===== HEALTH DASHBOARD ===== */
+  #health-modal .modal{max-width:700px;}
+  .health-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem;}
+  .health-stat{background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:14px;text-align:center;position:relative;overflow:hidden;}
+  .health-stat.danger::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--danger);}
+  .health-stat.warn::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--yellow);}
+  .health-stat.good::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--green);}
+  .health-stat-num{font-family:'Orbitron',monospace;font-size:2rem;font-weight:700;}
+  .health-stat.danger .health-stat-num{color:var(--danger);}
+  .health-stat.warn .health-stat-num{color:var(--yellow);}
+  .health-stat.good .health-stat-num{color:var(--green);}
+  .health-stat-label{font-size:10px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:4px;font-family:'Orbitron',monospace;}
+  .health-score-ring{display:flex;flex-direction:column;align-items:center;margin-bottom:1.5rem;}
+  .health-score-circle{width:100px;height:100px;position:relative;margin-bottom:8px;}
+  .health-score-circle svg{transform:rotate(-90deg);}
+  .health-score-circle .score-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:1.5rem;font-weight:700;color:var(--text);}
+  .health-score-label{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);}
+  .health-section{margin-bottom:1.2rem;}
+  .health-section-title{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+  .health-section-title.red{color:var(--danger);}
+  .health-section-title.yellow{color:var(--yellow);}
+  .health-section-title.green{color:var(--green);}
+  .health-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:2px;margin-bottom:6px;font-size:13px;}
+  .health-item-site{font-family:'Orbitron',monospace;font-size:10px;color:var(--accent2);letter-spacing:2px;}
+  .health-item-detail{font-size:11px;color:var(--muted);letter-spacing:1px;}
+  .health-item-badge{font-family:'Orbitron',monospace;font-size:9px;padding:2px 8px;border-radius:2px;border:1px solid;}
+  .health-item-badge.red{color:var(--danger);border-color:rgba(255,32,32,0.4);background:rgba(255,32,32,0.08);}
+  .health-item-badge.yellow{color:var(--yellow);border-color:rgba(255,204,0,0.3);background:rgba(255,204,0,0.06);}
+  .health-score-bar{height:6px;border-radius:3px;background:var(--surface2);margin-top:8px;overflow:hidden;}
+  .health-score-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+  .overall-score-wrap{display:flex;align-items:center;gap:16px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:16px;margin-bottom:1.5rem;}
+  .overall-score-num{font-family:'Orbitron',monospace;font-size:3rem;font-weight:700;min-width:80px;text-align:center;}
+  .overall-score-details{flex:1;}
+  .overall-score-title{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;margin-bottom:6px;}
+
+  /* ===== BREACH MODAL ===== */
+  #breach-modal .modal{max-width:560px;}
+  .breach-input-wrap{display:flex;gap:8px;margin-bottom:1rem;}
+  .breach-input-wrap input{flex:1;}
+  .breach-result{padding:16px;border-radius:2px;border:1px solid;margin-bottom:10px;display:none;}
+  .breach-result.compromised{border-color:rgba(255,32,32,0.4);background:rgba(255,32,32,0.06);}
+  .breach-result.safe{border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.04);}
+  .breach-result-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;margin-bottom:6px;}
+  .breach-result.compromised .breach-result-title{color:var(--danger);}
+  .breach-result.safe .breach-result-title{color:var(--green);}
+  .breach-result-detail{font-size:13px;color:var(--muted);line-height:1.6;letter-spacing:0.5px;}
+  .breach-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;}
+  .breach-chip{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:2px;border:1px solid rgba(255,32,32,0.3);background:rgba(255,32,32,0.07);color:var(--danger);}
+  .breach-loading{text-align:center;padding:1.5rem;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);display:none;}
+  .breach-loading::after{content:'';animation:dots 1.2s infinite;}
+  @keyframes dots{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
 </style>
 </head>
 <body>
 <div class="scanline"></div>
 
-<!-- AUTH SCREEN -->
-<div class="auth-screen" id="auth-screen">
+<!-- ===== LANDING PAGE ===== -->
+<div id="landing-screen">
+  <nav class="land-nav">
+    <div class="land-logo">VAULT<span>KEY</span></div>
+    <div class="land-nav-btns">
+      <button class="btn btn-gen" onclick="showAuthFromLanding('login')">LOGIN</button>
+      <button class="btn btn-primary" onclick="showAuthFromLanding('register')">GET STARTED</button>
+    </div>
+  </nav>
+
+  <div class="land-hero">
+    <!-- Animated rings background -->
+    <div class="particles" id="particles"></div>
+    <svg class="vault-ring" viewBox="0 0 500 500">
+      <g class="ring1"><circle cx="250" cy="250" r="200" stroke-width="1"/><circle cx="250" cy="250" r="180" stroke-width="0.5" stroke-dasharray="2 12"/></g>
+      <g class="ring2"><circle cx="250" cy="250" r="230" stroke-width="0.5" stroke-dasharray="6 4"/></g>
+    </svg>
+
+    <div class="land-badge">MILITARY-GRADE ENCRYPTION · BY DONTAE</div>
+    <div class="land-title">
+      <span class="t1">YOUR KEYS.</span>
+      <span class="t2">YOUR VAULT.</span>
+    </div>
+    <p class="land-sub">AES-256 encrypted password management with MFA, breach detection, and health monitoring. Built for people who take security seriously.</p>
+    <div class="land-cta">
+      <button class="btn btn-primary" style="padding:14px 36px;font-size:13px;" onclick="showAuthFromLanding('register')">⚡ SECURE MY VAULT</button>
+      <button class="btn btn-gen" style="padding:14px 36px;font-size:13px;" onclick="showAuthFromLanding('login')">ACCESS VAULT →</button>
+    </div>
+  </div>
+
+  <div class="land-stats-bar">
+    <div class="land-stat"><div class="land-stat-num">AES-256</div><div class="land-stat-label">Encryption Standard</div></div>
+    <div class="land-stat"><div class="land-stat-num">0</div><div class="land-stat-label">Plain-text stored</div></div>
+    <div class="land-stat"><div class="land-stat-num">MFA</div><div class="land-stat-label">Two-Factor Auth</div></div>
+    <div class="land-stat"><div class="land-stat-num">5min</div><div class="land-stat-label">Auto-Lock</div></div>
+  </div>
+
+  <hr class="land-divider">
+
+  <div class="land-features">
+    <div class="feat-card">
+      <div class="feat-icon">🔐</div>
+      <div class="feat-title">AES-256 Encryption</div>
+      <div class="feat-desc">Every password is encrypted with military-grade Fernet AES-256 before it ever touches the database. Even database admins can't see your passwords.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🛡️</div>
+      <div class="feat-title">Breach Detection</div>
+      <div class="feat-desc">Instantly check if any of your passwords have appeared in known data breaches via the HaveIBeenPwned database — over 10 billion compromised credentials scanned.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">💪</div>
+      <div class="feat-title">Password Health</div>
+      <div class="feat-desc">Get a full health report of your vault — weak passwords, reused credentials, and accounts that haven't been updated in over 90 days, all in one dashboard.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📱</div>
+      <div class="feat-title">Google Authenticator MFA</div>
+      <div class="feat-desc">Add a second layer of protection with TOTP-based multi-factor authentication. Even if your master password is stolen, your vault stays locked.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⏱️</div>
+      <div class="feat-title">Auto-Lock</div>
+      <div class="feat-desc">Your vault automatically locks after 5 minutes of inactivity. Step away from your device without worrying about unauthorized access.</div>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⚡</div>
+      <div class="feat-title">Password Generator</div>
+      <div class="feat-desc">Generate cryptographically strong passwords up to 32 characters with custom rules — uppercase, lowercase, numbers, symbols. One click to fill.</div>
+    </div>
+  </div>
+
+  <div class="land-footer">VAULTKEY · DESIGNED & BUILT BY <span>DONTAE</span> · YOUR KEYS. YOUR VAULT. YOUR RULES. · © 2026</div>
+</div>
+
+<!-- ===== AUTH SCREEN ===== -->
+<div class="auth-screen" id="auth-screen" style="display:none;">
   <div class="auth-box">
     <div class="auth-corner-tr"></div><div class="auth-corner-bl"></div>
     <div class="auth-logo">VAULT<span>KEY</span></div>
@@ -163,28 +340,14 @@
     <div class="auth-error" id="auth-error"></div>
     <div class="auth-success" id="auth-success"></div>
 
-    <!-- LOGIN FIELDS -->
     <div id="login-fields">
-      <div class="form-group">
-        <label>Username</label>
-        <input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" />
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" />
-      </div>
+      <div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" /></div>
     </div>
 
-    <!-- REGISTER FIELDS -->
     <div id="register-fields" style="display:none">
-      <div class="form-group">
-        <label>Username</label>
-        <input type="text" id="reg-username" placeholder="Choose a username" />
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="reg-password" placeholder="Choose a password (min 6 chars)" />
-      </div>
+      <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Choose a username" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Choose a password (min 6 chars)" /></div>
       <div class="form-group">
         <label>Security Question</label>
         <select id="reg-question">
@@ -196,42 +359,32 @@
           <option value="What was your childhood nickname?">What was your childhood nickname?</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Security Answer</label>
-        <input type="text" id="reg-answer" placeholder="Your answer (remember this!)" />
-      </div>
+      <div class="form-group"><label>Security Answer</label><input type="text" id="reg-answer" placeholder="Your answer (remember this!)" /></div>
     </div>
 
-    <!-- FORGOT PASSWORD FIELDS -->
     <div id="forgot-fields" style="display:none">
-      <div class="form-group">
-        <label>Username</label>
-        <input type="text" id="forgot-username" placeholder="Enter your username" />
-      </div>
+      <div class="form-group"><label>Username</label><input type="text" id="forgot-username" placeholder="Enter your username" /></div>
       <div id="forgot-question-wrap" style="display:none">
-        <div class="form-group">
-          <label id="forgot-question-label">Security Question</label>
-          <input type="text" id="forgot-answer" placeholder="Your answer" />
-        </div>
-        <div class="form-group">
-          <label>New Password</label>
-          <input type="password" id="forgot-newpass" placeholder="Enter new password (min 6 chars)" />
-        </div>
+        <div class="form-group"><label id="forgot-question-label">Security Question</label><input type="text" id="forgot-answer" placeholder="Your answer" /></div>
+        <div class="form-group"><label>New Password</label><input type="password" id="forgot-newpass" placeholder="Enter new password (min 6 chars)" /></div>
       </div>
       <button class="btn btn-gen" style="width:100%;margin-bottom:0.5rem;" onclick="lookupQuestion()">FIND MY ACCOUNT →</button>
     </div>
 
     <button class="btn btn-primary" style="width:100%;margin-top:0.5rem;" id="auth-btn" onclick="submitAuth()">ACCESS VAULT</button>
+    <div class="back-to-landing"><a onclick="showLanding()">← BACK TO HOME</a></div>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- ===== MAIN APP ===== -->
 <div class="app-screen" id="app-screen">
   <header>
     <div class="logo">VAULT<span>KEY</span><span class="logo-sub">BUILT BY DONTAE · YOUR KEYS. YOUR VAULT. YOUR RULES.</span></div>
     <div class="header-right">
       <div class="sys-status">● ONLINE</div>
       <div class="user-badge" id="user-badge">USER</div>
+      <button class="btn btn-health" onclick="openHealthDashboard()">💪 HEALTH</button>
+      <button class="btn btn-health" style="border-color:rgba(255,32,32,0.3);color:var(--danger);" onclick="openBreachChecker()">🔴 BREACH CHECK</button>
       <button class="btn btn-logout" onclick="openMFASetup()" style="border-color:rgba(255,140,0,0.3);color:var(--accent2);">🔐 MFA</button>
       <button class="btn btn-logout" onclick="document.getElementById('security-info-wrap').style.display='flex'" style="border-color:rgba(255,140,0,0.3);color:var(--accent2);">🛡️ SECURITY</button>
       <button class="btn btn-logout" onclick="logout()">LOGOUT</button>
@@ -265,7 +418,7 @@
   </div>
 </div>
 
-<!-- ENTRY MODAL -->
+<!-- ===== ENTRY MODAL ===== -->
 <div class="modal-overlay" id="entry-modal">
   <div class="modal">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
@@ -286,14 +439,10 @@
     <div class="form-group">
       <label>Category</label>
       <select id="f-category">
-        <option value="General">General</option>
-        <option value="Work">Work</option>
-        <option value="Social">Social</option>
-        <option value="Banking">Banking</option>
-        <option value="Email">Email</option>
-        <option value="Shopping">Shopping</option>
-        <option value="Gaming">Gaming</option>
-        <option value="Other">Other</option>
+        <option value="General">General</option><option value="Work">Work</option>
+        <option value="Social">Social</option><option value="Banking">Banking</option>
+        <option value="Email">Email</option><option value="Shopping">Shopping</option>
+        <option value="Gaming">Gaming</option><option value="Other">Other</option>
       </select>
     </div>
     <div class="form-group"><label>Intel / Notes</label><textarea id="f-notes" placeholder="Additional information..."></textarea></div>
@@ -304,7 +453,7 @@
   </div>
 </div>
 
-<!-- GENERATOR MODAL -->
+<!-- ===== GENERATOR MODAL ===== -->
 <div class="modal-overlay" id="gen-modal">
   <div class="modal">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
@@ -332,18 +481,58 @@
     </div>
   </div>
 </div>
+
+<!-- ===== BREACH CHECKER MODAL ===== -->
+<div class="modal-overlay" id="breach-modal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// BREACH DETECTOR</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.2rem;letter-spacing:0.5px;line-height:1.6;">Check if a password has appeared in known data breaches. Uses k-anonymity — only the first 5 chars of the hash are sent, your actual password never leaves your device.</p>
+    <div class="breach-input-wrap">
+      <input type="password" id="breach-input" placeholder="Enter password to check..." onkeydown="if(event.key==='Enter')checkBreach()" />
+      <button class="btn btn-primary" onclick="checkBreach()">SCAN</button>
+    </div>
+    <div class="breach-loading" id="breach-loading">SCANNING BREACH DATABASE</div>
+    <div class="breach-result" id="breach-result"></div>
+    <div style="margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;">
+      <div style="font-family:'Orbitron',monospace;font-size:10px;letter-spacing:3px;color:var(--accent2);margin-bottom:10px;">SCAN ALL VAULT ENTRIES</div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;letter-spacing:0.5px;">Check every saved password against the breach database at once.</p>
+      <button class="btn btn-gen" style="width:100%;" onclick="checkAllBreaches()" id="scan-all-btn">⚡ SCAN ENTIRE VAULT</button>
+      <div id="scan-all-progress" style="display:none;margin-top:10px;font-family:Orbitron,monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-align:center;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="document.getElementById('breach-modal').classList.remove('open')">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HEALTH DASHBOARD MODAL ===== -->
+<div class="modal-overlay" id="health-modal">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// PASSWORD HEALTH REPORT</h2>
+    <div id="health-content">
+      <div style="text-align:center;padding:2rem;font-family:Orbitron,monospace;font-size:11px;letter-spacing:3px;color:var(--muted);">ANALYZING VAULT...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="document.getElementById('health-modal').classList.remove('open')">CLOSE</button>
+      <button class="btn btn-primary" onclick="runHealthCheck()">↻ REFRESH</button>
+    </div>
+  </div>
+</div>
+
+<!-- Footer -->
 <div style="position:fixed;bottom:0;left:0;right:0;z-index:10;text-align:center;padding:8px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);border-top:1px solid var(--border);background:rgba(5,5,8,0.9);">
   VAULTKEY · DESIGNED & BUILT BY <span style="color:var(--accent)">DONTAE</span> · YOUR KEYS. YOUR VAULT. YOUR RULES. · © 2026
 </div>
+
 <!-- MFA SETUP MODAL -->
 <div class="modal-overlay" id="mfa-modal">
   <div class="modal">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// ENABLE MFA</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;letter-spacing:1px;">Scan this QR code with Google Authenticator or Authy to enable two-factor authentication.</p>
-    <div style="text-align:center;margin:1rem 0;background:#fff;padding:12px;border-radius:4px;display:inline-block;width:100%;">
-      <img id="mfa-qr" src="" style="width:160px;height:160px;" />
-    </div>
+    <div style="text-align:center;margin:1rem 0;background:#fff;padding:12px;border-radius:4px;display:inline-block;width:100%;"><img id="mfa-qr" src="" style="width:160px;height:160px;" /></div>
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:1rem;">
       <div style="font-size:10px;color:var(--muted);font-family:Orbitron,monospace;letter-spacing:2px;margin-bottom:4px;">MANUAL ENTRY KEY:</div>
       <div style="font-family:Orbitron,monospace;font-size:12px;color:var(--accent2);word-break:break-all;" id="mfa-secret-text"></div>
@@ -375,32 +564,18 @@
   </div>
 </div>
 
-<!-- SECURITY INFO SECTION (shown in app) -->
+<!-- SECURITY INFO -->
 <div id="security-info-wrap" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
   <div style="background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:4px;padding:2rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;">
     <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);"></div>
     <h2 style="font-family:Orbitron,monospace;font-size:14px;color:var(--accent);margin-bottom:1.5rem;letter-spacing:3px;">// HOW YOUR DATA IS PROTECTED</h2>
     <div style="display:flex;flex-direction:column;gap:14px;">
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
-        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔐 PASSWORD ENCRYPTION</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.6;">All passwords are encrypted using AES-256 Fernet encryption before being stored. Even if someone accessed the database directly they would only see encrypted data — not your actual passwords.</div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
-        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🛡️ ACCOUNT SECURITY</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Your master password is hashed with SHA-256 and a unique salt — it is never stored in plain text. After 5 failed login attempts your account is locked for 15 minutes to prevent brute force attacks.</div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
-        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">📱 TWO FACTOR AUTHENTICATION</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Optional MFA using Google Authenticator or Authy adds a second layer of protection. Even if someone has your password they cannot access your vault without your phone.</div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
-        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">⏱️ AUTO LOCK</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Your vault automatically locks after 5 minutes of inactivity to protect your data if you step away from your device.</div>
-      </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
-        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔒 SECURE CONNECTION</div>
-        <div style="font-size:13px;color:var(--muted);line-height:1.6;">All data is transmitted over HTTPS — your connection is always encrypted in transit. Your data is stored in a secure PostgreSQL database with isolated user accounts.</div>
-      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;"><div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔐 PASSWORD ENCRYPTION</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">All passwords are encrypted using AES-256 Fernet encryption before being stored. Even if someone accessed the database directly they would only see encrypted data — not your actual passwords.</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;"><div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🛡️ ACCOUNT SECURITY</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">Your master password is hashed with SHA-256 and a unique salt — it is never stored in plain text. After 5 failed login attempts your account is locked for 15 minutes to prevent brute force attacks.</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;"><div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">📱 TWO FACTOR AUTHENTICATION</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">Optional MFA using Google Authenticator or Authy adds a second layer of protection. Even if someone has your password they cannot access your vault without your phone.</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;"><div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">⏱️ AUTO LOCK</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">Your vault automatically locks after 5 minutes of inactivity to protect your data if you step away from your device.</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;"><div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔒 SECURE CONNECTION</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">All data is transmitted over HTTPS — your connection is always encrypted in transit. Your data is stored in a secure PostgreSQL database with isolated user accounts.</div></div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;"><div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔴 BREACH DETECTION</div><div style="font-size:13px;color:var(--muted);line-height:1.6;">Passwords are checked against the HaveIBeenPwned database using k-anonymity. Only the first 5 characters of the SHA-1 hash are sent — your actual password never leaves your device.</div></div>
     </div>
     <button class="btn btn-primary" style="width:100%;margin-top:1.5rem;" onclick="document.getElementById('security-info-wrap').style.display='none'">CLOSE</button>
   </div>
@@ -410,21 +585,56 @@
 
 <script>
 let allEntries=[], activeCategory='All', currentTab='login';
+let breachCache={};  // cache breach results per entry id
 
-// CHECK IF ALREADY LOGGED IN
+// ===== LANDING =====
+function showLanding(){
+  document.getElementById('landing-screen').style.display='flex';
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app-screen').style.display='none';
+}
+
+function showAuthFromLanding(tab){
+  document.getElementById('landing-screen').style.display='none';
+  document.getElementById('auth-screen').style.display='flex';
+  switchTab(tab);
+}
+
+// Spawn particles
+(function spawnParticles(){
+  const wrap=document.getElementById('particles');
+  if(!wrap)return;
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    p.style.left=Math.random()*100+'%';
+    p.style.bottom='-10px';
+    p.style.animationDelay=Math.random()*8+'s';
+    p.style.animationDuration=(6+Math.random()*6)+'s';
+    p.style.opacity=Math.random()*0.5;
+    wrap.appendChild(p);
+  }
+})();
+
+// ===== SESSION CHECK =====
 async function checkSession(){
   const res=await fetch('/api/me');
   const data=await res.json();
-  if(data.logged_in){showApp(data.username);}
-  else{showAuth();}
+  if(data.logged_in){
+    document.getElementById('landing-screen').style.display='none';
+    showApp(data.username);
+  }
+  // else stay on landing
 }
 
 function showAuth(){
+  document.getElementById('landing-screen').style.display='none';
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app-screen').style.display='none';
 }
 
 function showApp(username){
+  document.getElementById('landing-screen').style.display='none';
   document.getElementById('auth-screen').style.display='none';
   document.getElementById('app-screen').style.display='block';
   document.getElementById('user-badge').textContent='▶ '+username.toUpperCase();
@@ -494,20 +704,14 @@ async function submitAuth(){
     const res=await fetch('/api/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,security_answer,new_password})});
     const data=await res.json();
     if(!res.ok){showAuthError(data.error);return;}
-    sucEl.textContent='Password reset! Please log in with your new password.';sucEl.style.display='block';
+    sucEl.textContent='Password reset! Please log in.';sucEl.style.display='block';
     switchTab('login');
   }
 }
 
-function showAuthError(msg){
-  const el=document.getElementById('auth-error');
-  el.textContent=msg;el.style.display='block';
-}
+function showAuthError(msg){const el=document.getElementById('auth-error');el.textContent=msg;el.style.display='block';}
 
-async function logout(){
-  await fetch('/api/logout',{method:'POST'});
-  showAuth();
-}
+async function logout(){await fetch('/api/logout',{method:'POST'});showLanding();}
 
 async function loadAll(){
   const res=await fetch('/api/passwords');
@@ -544,7 +748,12 @@ function renderCards(entries){
   const empty=document.getElementById('empty-state');
   if(!entries.length){grid.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
-  grid.innerHTML=entries.map(e=>`
+  grid.innerHTML=entries.map(e=>{
+    const cached=breachCache[e.id];
+    let breachHtml='';
+    if(cached===true)breachHtml=`<div class="breach-badge compromised">⚠ BREACHED</div>`;
+    else if(cached===false)breachHtml=`<div class="breach-badge safe">✓ SECURE</div>`;
+    return `
     <div class="card" id="card-${e.id}">
       <div class="card-corner"></div><div class="card-corner-bl"></div>
       <div class="card-header">
@@ -557,13 +766,14 @@ function renderCards(entries){
         <button class="eye-btn" onclick="togglePass(${e.id})">👁</button>
         <button class="copy-btn" onclick="copyPass(${e.id})">📋</button>
       </div>
+      ${breachHtml}
       ${e.notes?`<div class="card-notes">${esc(e.notes)}</div>`:''}
       <div class="card-actions">
         <button class="btn btn-sm btn-edit" onclick="openEdit(${e.id})">EDIT</button>
         <button class="btn btn-sm btn-danger" onclick="deleteEntry(${e.id})">DELETE</button>
       </div>
       <div class="card-date">LOGGED: ${new Date(e.created_at).toLocaleDateString()}</div>
-    </div>`).join('');
+    </div>`}).join('');
 }
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -632,7 +842,7 @@ function generatePassword(){
 }
 function updateStrength(pw){
   let s=0;if(pw.length>=12)s++;if(pw.length>=16)s++;if(/[A-Z]/.test(pw))s++;if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
-  const colors=['#ff2020','#ff4500','#ff8c00','#ffb347','#ff8c00'],widths=['20%','40%','60%','80%','100%'];
+  const colors=['#ff2020','#ff4500','#ff8c00','#ffb347','#00ff88'],widths=['20%','40%','60%','80%','100%'];
   const bar=document.getElementById('strength-bar');
   bar.style.background=colors[Math.min(s,4)];bar.style.width=widths[Math.min(s,4)];
 }
@@ -649,19 +859,17 @@ function showToast(msg,isError=false){
   t.style.color=isError?'var(--danger)':'var(--accent2)';
   t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
 }
+
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
 
-// AUTO LOCK after 5 minutes of inactivity
+// ===== AUTO LOCK =====
 let lockTimer;
 function resetLockTimer(){
   clearTimeout(lockTimer);
   lockTimer=setTimeout(()=>{
     if(document.getElementById('app-screen').style.display==='block'){
       showToast('VAULT LOCKED DUE TO INACTIVITY');
-      setTimeout(()=>{
-        fetch('/api/logout',{method:'POST'});
-        showAuth();
-      },2000);
+      setTimeout(()=>{fetch('/api/logout',{method:'POST'});showLanding();},2000);
     }
   },5*60*1000);
 }
@@ -670,7 +878,7 @@ document.addEventListener('keypress',resetLockTimer);
 document.addEventListener('click',resetLockTimer);
 resetLockTimer();
 
-// MFA SETUP
+// ===== MFA =====
 async function openMFASetup(){
   const res=await fetch('/api/setup-mfa',{method:'POST'});
   const data=await res.json();
@@ -679,7 +887,6 @@ async function openMFASetup(){
   document.getElementById('mfa-secret-text').textContent=data.secret;
   document.getElementById('mfa-modal').classList.add('open');
 }
-
 async function confirmMFA(){
   const code=document.getElementById('mfa-code').value.trim();
   if(!code){showToast('ENTER THE 6 DIGIT CODE',true);return;}
@@ -690,8 +897,6 @@ async function confirmMFA(){
   document.getElementById('mfa-modal').classList.remove('open');
   document.getElementById('mfa-code').value='';
 }
-
-// MFA VERIFY on login
 async function verifyMFA(){
   const code=document.getElementById('mfa-verify-code').value.trim();
   if(!code){showAuthError('ENTER THE 6 DIGIT CODE');return;}
@@ -702,8 +907,219 @@ async function verifyMFA(){
   document.getElementById('mfa-verify-modal').classList.remove('open');
 }
 
-checkSession();
+// ===== BREACH CHECKER =====
+async function sha1(str){
+  const buf=await crypto.subtle.digest('SHA-1',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+}
 
+async function checkPasswordBreach(password){
+  const hash=await sha1(password);
+  const prefix=hash.slice(0,5);
+  const suffix=hash.slice(5);
+  try{
+    const res=await fetch(`https://api.pwnedpasswords.com/range/${prefix}`,{headers:{'Add-Padding':'true'}});
+    if(!res.ok)return{breached:false,count:0,error:'API unavailable'};
+    const text=await res.text();
+    const lines=text.split('\n');
+    for(const line of lines){
+      const[h,c]=line.trim().split(':');
+      if(h===suffix)return{breached:true,count:parseInt(c)};
+    }
+    return{breached:false,count:0};
+  }catch(e){return{breached:false,count:0,error:'Network error'};}
+}
+
+function openBreachChecker(){
+  document.getElementById('breach-modal').classList.add('open');
+  document.getElementById('breach-input').value='';
+  document.getElementById('breach-result').style.display='none';
+  document.getElementById('breach-loading').style.display='none';
+  document.getElementById('scan-all-progress').style.display='none';
+}
+
+async function checkBreach(){
+  const pw=document.getElementById('breach-input').value;
+  if(!pw){showToast('ENTER A PASSWORD TO CHECK',true);return;}
+  const loadEl=document.getElementById('breach-loading');
+  const resEl=document.getElementById('breach-result');
+  loadEl.style.display='block';
+  resEl.style.display='none';
+  const result=await checkPasswordBreach(pw);
+  loadEl.style.display='none';
+  resEl.style.display='block';
+  if(result.error){
+    resEl.className='breach-result compromised';
+    resEl.innerHTML=`<div class="breach-result-title">⚠ CHECK FAILED</div><div class="breach-result-detail">${result.error}. Try again later.</div>`;
+  } else if(result.breached){
+    resEl.className='breach-result compromised';
+    resEl.innerHTML=`<div class="breach-result-title">⚠ PASSWORD COMPROMISED</div><div class="breach-result-detail">This password has appeared <strong style="color:var(--danger)">${result.count.toLocaleString()} times</strong> in known data breaches. Change it immediately on any account using this password.</div>`;
+  } else {
+    resEl.className='breach-result safe';
+    resEl.innerHTML=`<div class="breach-result-title">✓ PASSWORD SECURE</div><div class="breach-result-detail">This password has not been found in any known data breaches. It appears safe to use.</div>`;
+  }
+}
+
+async function checkAllBreaches(){
+  if(!allEntries.length){showToast('NO ENTRIES TO SCAN',true);return;}
+  const btn=document.getElementById('scan-all-btn');
+  const prog=document.getElementById('scan-all-progress');
+  btn.disabled=true;btn.textContent='SCANNING...';
+  prog.style.display='block';
+  let compromised=0;
+  for(let i=0;i<allEntries.length;i++){
+    const entry=allEntries[i];
+    prog.textContent=`SCANNING ${i+1}/${allEntries.length}: ${entry.site.toUpperCase()}`;
+    const fullData=await(await fetch(`/api/passwords/${entry.id}`)).json();
+    const result=await checkPasswordBreach(fullData.password);
+    breachCache[entry.id]=result.breached;
+    if(result.breached)compromised++;
+    await new Promise(r=>setTimeout(r,150)); // rate limit
+  }
+  btn.disabled=false;btn.textContent='⚡ SCAN ENTIRE VAULT';
+  prog.textContent=`SCAN COMPLETE — ${compromised} COMPROMISED / ${allEntries.length} TOTAL`;
+  filterEntries(); // re-render cards with badges
+  if(compromised>0)showToast(`⚠ ${compromised} BREACHED PASSWORDS FOUND`,true);
+  else showToast('ALL PASSWORDS SECURE ✓');
+}
+
+// ===== HEALTH DASHBOARD =====
+function openHealthDashboard(){
+  document.getElementById('health-modal').classList.add('open');
+  runHealthCheck();
+}
+
+async function runHealthCheck(){
+  const content=document.getElementById('health-content');
+  content.innerHTML='<div style="text-align:center;padding:2rem;font-family:Orbitron,monospace;font-size:11px;letter-spacing:3px;color:var(--muted);">ANALYZING VAULT...</div>';
+
+  // Fetch all decrypted passwords
+  const decrypted=[];
+  for(const entry of allEntries){
+    const d=await(await fetch(`/api/passwords/${entry.id}`)).json();
+    decrypted.push({...entry,plainPassword:d.password});
+  }
+
+  if(!decrypted.length){
+    content.innerHTML='<div style="text-align:center;padding:2rem;color:var(--muted);font-family:Orbitron,monospace;font-size:11px;letter-spacing:3px;">NO ENTRIES TO ANALYZE</div>';
+    return;
+  }
+
+  // Weak passwords (score < 3)
+  function scorePassword(pw){
+    let s=0;
+    if(pw.length>=8)s++;if(pw.length>=12)s++;if(pw.length>=16)s++;
+    if(/[A-Z]/.test(pw))s++;if(/[a-z]/.test(pw))s++;
+    if(/[0-9]/.test(pw))s++;if(/[^A-Za-z0-9]/.test(pw))s++;
+    return s;
+  }
+
+  const weak=decrypted.filter(e=>scorePassword(e.plainPassword)<4);
+
+  // Reused passwords
+  const pwGroups={};
+  decrypted.forEach(e=>{
+    const k=e.plainPassword;
+    if(!pwGroups[k])pwGroups[k]=[];
+    pwGroups[k].push(e);
+  });
+  const reused=decrypted.filter(e=>pwGroups[e.plainPassword].length>1);
+
+  // Old passwords (>90 days)
+  const now=new Date();
+  const old=decrypted.filter(e=>{
+    const created=new Date(e.created_at);
+    return(now-created)/(1000*60*60*24)>90;
+  });
+
+  // Overall score
+  const issues=new Set([...weak.map(e=>e.id),...reused.map(e=>e.id),...old.map(e=>e.id)]);
+  const score=Math.round(((decrypted.length-issues.size)/decrypted.length)*100);
+  const scoreColor=score>=80?'var(--green)':score>=50?'var(--yellow)':'var(--danger)';
+  const scoreLabel=score>=80?'EXCELLENT':score>=60?'GOOD':score>=40?'FAIR':'CRITICAL';
+
+  let html=`
+  <div class="overall-score-wrap">
+    <div class="overall-score-num" style="color:${scoreColor}">${score}</div>
+    <div class="overall-score-details">
+      <div class="overall-score-title" style="color:${scoreColor}">VAULT HEALTH: ${scoreLabel}</div>
+      <div class="health-score-bar"><div class="health-score-fill" style="width:${score}%;background:${scoreColor}"></div></div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:0.5px;">${issues.size} of ${decrypted.length} passwords need attention</div>
+    </div>
+  </div>
+  <div class="health-summary">
+    <div class="health-stat ${weak.length>0?'danger':'good'}">
+      <div class="health-stat-num">${weak.length}</div>
+      <div class="health-stat-label">Weak</div>
+    </div>
+    <div class="health-stat ${reused.length>0?'warn':'good'}">
+      <div class="health-stat-num">${reused.length}</div>
+      <div class="health-stat-label">Reused</div>
+    </div>
+    <div class="health-stat ${old.length>0?'warn':'good'}">
+      <div class="health-stat-num">${old.length}</div>
+      <div class="health-stat-label">Outdated</div>
+    </div>
+  </div>`;
+
+  if(weak.length){
+    html+=`<div class="health-section">
+      <div class="health-section-title red">⚠ WEAK PASSWORDS (${weak.length})</div>
+      ${weak.map(e=>`
+        <div class="health-item">
+          <div>
+            <div class="health-item-site">${esc(e.site)}</div>
+            <div class="health-item-detail">${esc(e.username)}</div>
+          </div>
+          <span class="health-item-badge red">WEAK</span>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  if(reused.length){
+    // Group and show unique reused passwords
+    const shown=new Set();
+    const reusedGroups=Object.values(pwGroups).filter(g=>g.length>1);
+    html+=`<div class="health-section">
+      <div class="health-section-title yellow">⚡ REUSED PASSWORDS (${reused.length} entries)</div>
+      ${reusedGroups.map(group=>`
+        <div class="health-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+            <div style="font-family:Orbitron,monospace;font-size:10px;color:var(--yellow);letter-spacing:1px;">SAME PASSWORD USED ON ${group.length} SITES:</div>
+            <span class="health-item-badge yellow">REUSED</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;">${group.map(e=>`<span style="font-family:Orbitron,monospace;font-size:9px;padding:2px 8px;border:1px solid rgba(255,204,0,0.3);border-radius:2px;color:var(--accent2);">${esc(e.site)}</span>`).join('')}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  if(old.length){
+    html+=`<div class="health-section">
+      <div class="health-section-title yellow">🕒 OUTDATED PASSWORDS (${old.length})</div>
+      ${old.map(e=>{
+        const days=Math.floor((now-new Date(e.created_at))/(1000*60*60*24));
+        return`<div class="health-item">
+          <div>
+            <div class="health-item-site">${esc(e.site)}</div>
+            <div class="health-item-detail">${esc(e.username)}</div>
+          </div>
+          <span class="health-item-badge yellow">${days}D OLD</span>
+        </div>`;}).join('')}
+    </div>`;
+  }
+
+  if(!issues.size){
+    html+=`<div style="text-align:center;padding:1.5rem;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.2);border-radius:2px;">
+      <div style="font-size:2rem;margin-bottom:8px;">✓</div>
+      <div style="font-family:Orbitron,monospace;font-size:12px;letter-spacing:3px;color:var(--green);">ALL PASSWORDS HEALTHY</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">No weak, reused, or outdated passwords detected.</div>
+    </div>`;
+  }
+
+  content.innerHTML=html;
+}
+
+checkSession();
 </script>
 </body>
 </html>
