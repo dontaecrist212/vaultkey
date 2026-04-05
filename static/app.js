@@ -472,6 +472,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Close modals on backdrop click
   document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); }));
-});
 
-checkSession();
+  checkSession();
+});
