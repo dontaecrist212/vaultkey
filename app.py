@@ -8,6 +8,9 @@ from psycopg2.extras import RealDictCursor
 from cryptography.fernet import Fernet
 import base64
 from datetime import datetime, timedelta
+import pyotp
+import qrcode
+import io
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
@@ -23,19 +26,16 @@ def get_fernet():
     return Fernet(fernet_key)
 
 def encrypt_password(password):
-    f = get_fernet()
-    return f.encrypt(password.encode()).decode()
+    return get_fernet().encrypt(password.encode()).decode()
 
 def decrypt_password(encrypted):
     try:
-        f = get_fernet()
-        return f.decrypt(encrypted.encode()).decode()
+        return get_fernet().decrypt(encrypted.encode()).decode()
     except:
         return encrypted
 
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
-    return conn
+    return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
 def init_db():
     conn = get_db()
@@ -49,12 +49,16 @@ def init_db():
         security_answer TEXT,
         failed_attempts INTEGER DEFAULT 0,
         locked_until TIMESTAMP,
+        mfa_secret TEXT,
+        mfa_enabled BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0")
     cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP")
     cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_question TEXT")
     cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer TEXT")
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_secret TEXT")
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN DEFAULT FALSE")
     cur.execute('''CREATE TABLE IF NOT EXISTS passwords (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -122,7 +126,7 @@ def register():
         cur.close()
         conn.close()
         return jsonify({'message': 'Account created!'}), 201
-    except Exception as e:
+    except:
         return jsonify({'error': 'Username already taken'}), 400
 
 @app.route('/api/login', methods=['POST'])
@@ -135,44 +139,97 @@ def login():
     cur.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cur.fetchone()
     if not user:
-        cur.close()
-        conn.close()
+        cur.close(); conn.close()
         return jsonify({'error': 'Invalid username or password'}), 401
     locked_until = user.get('locked_until')
     if locked_until and locked_until > datetime.utcnow():
-        cur.close()
-        conn.close()
-        return jsonify({'error': 'Account locked due to too many failed attempts. Try again in 15 minutes.'}), 429
+        cur.close(); conn.close()
+        return jsonify({'error': 'Account locked. Try again in 15 minutes.'}), 429
     pw_hash = hash_password(password, user['salt'])
     if pw_hash != user['password_hash']:
         new_attempts = (user.get('failed_attempts') or 0) + 1
         if new_attempts >= 5:
             lock_until = datetime.utcnow() + timedelta(minutes=15)
-            cur.execute("UPDATE users SET failed_attempts=%s, locked_until=%s WHERE id=%s",
-                       (new_attempts, lock_until, user['id']))
-            conn.commit()
-            cur.close()
-            conn.close()
-            return jsonify({'error': 'Too many failed attempts. Account locked for 15 minutes.'}), 429
+            cur.execute("UPDATE users SET failed_attempts=%s, locked_until=%s WHERE id=%s", (new_attempts, lock_until, user['id']))
         else:
             cur.execute("UPDATE users SET failed_attempts=%s WHERE id=%s", (new_attempts, user['id']))
-            conn.commit()
-            cur.close()
-            conn.close()
-            remaining = 5 - new_attempts
-            return jsonify({'error': f'Invalid password. {remaining} attempts remaining.'}), 401
+        conn.commit(); cur.close(); conn.close()
+        remaining = max(0, 5 - new_attempts)
+        return jsonify({'error': f'Invalid password. {remaining} attempts remaining.'}), 401
     cur.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=%s", (user['id'],))
-    conn.commit()
-    cur.close()
-    conn.close()
+    conn.commit(); cur.close(); conn.close()
+    if user.get('mfa_enabled'):
+        session['mfa_pending_user_id'] = user['id']
+        session['mfa_pending_username'] = user['username']
+        return jsonify({'mfa_required': True})
     session['user_id'] = user['id']
     session['username'] = user['username']
     return jsonify({'message': 'Logged in!', 'username': user['username']})
 
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'message': 'Logged out!'})
+@app.route('/api/verify-mfa', methods=['POST'])
+def verify_mfa():
+    data = request.json
+    code = data.get('code', '').strip()
+    if 'mfa_pending_user_id' not in session:
+        return jsonify({'error': 'No MFA pending'}), 400
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT mfa_secret, username FROM users WHERE id=%s", (session['mfa_pending_user_id'],))
+    user = cur.fetchone()
+    cur.close(); conn.close()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    totp = pyotp.TOTP(user['mfa_secret'])
+    if not totp.verify(code, valid_window=1):
+        return jsonify({'error': 'Invalid MFA code'}), 401
+    session['user_id'] = session.pop('mfa_pending_user_id')
+    session['username'] = session.pop('mfa_pending_username')
+    return jsonify({'message': 'Logged in!', 'username': session['username']})
+
+@app.route('/api/setup-mfa', methods=['POST'])
+@login_required
+def setup_mfa():
+    secret = pyotp.random_base32()
+    totp = pyotp.TOTP(secret)
+    username = session['username']
+    provisioning_uri = totp.provisioning_uri(name=username, issuer_name='VaultKey')
+    qr = qrcode.QRCode(version=1, box_size=6, border=2)
+    qr.add_data(provisioning_uri)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    buf = io.BytesIO()
+    img.save(buf, format='PNG')
+    buf.seek(0)
+    qr_b64 = base64.b64encode(buf.read()).decode()
+    session['mfa_setup_secret'] = secret
+    return jsonify({'qr_code': qr_b64, 'secret': secret})
+
+@app.route('/api/confirm-mfa', methods=['POST'])
+@login_required
+def confirm_mfa():
+    data = request.json
+    code = data.get('code', '').strip()
+    secret = session.get('mfa_setup_secret')
+    if not secret:
+        return jsonify({'error': 'No MFA setup in progress'}), 400
+    totp = pyotp.TOTP(secret)
+    if not totp.verify(code, valid_window=1):
+        return jsonify({'error': 'Invalid code. Try again.'}), 401
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET mfa_secret=%s, mfa_enabled=TRUE WHERE id=%s", (secret, session['user_id']))
+    conn.commit(); cur.close(); conn.close()
+    session.pop('mfa_setup_secret', None)
+    return jsonify({'message': 'MFA enabled successfully!'})
+
+@app.route('/api/disable-mfa', methods=['POST'])
+@login_required
+def disable_mfa():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE users SET mfa_secret=NULL, mfa_enabled=FALSE WHERE id=%s", (session['user_id'],))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'message': 'MFA disabled'})
 
 @app.route('/api/get-security-question', methods=['POST'])
 def get_security_question():
@@ -182,10 +239,9 @@ def get_security_question():
     cur = conn.cursor()
     cur.execute("SELECT security_question FROM users WHERE username=%s", (username,))
     user = cur.fetchone()
-    cur.close()
-    conn.close()
+    cur.close(); conn.close()
     if not user or not user['security_question']:
-        return jsonify({'error': 'Username not found or no security question set'}), 404
+        return jsonify({'error': 'Username not found'}), 404
     return jsonify({'security_question': user['security_question']})
 
 @app.route('/api/reset-password', methods=['POST'])
@@ -203,21 +259,16 @@ def reset_password():
     cur.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cur.fetchone()
     if not user:
-        cur.close()
-        conn.close()
+        cur.close(); conn.close()
         return jsonify({'error': 'Username not found'}), 404
-    answer_hash = hash_answer(security_answer)
-    if answer_hash != user['security_answer']:
-        cur.close()
-        conn.close()
+    if hash_answer(security_answer) != user['security_answer']:
+        cur.close(); conn.close()
         return jsonify({'error': 'Incorrect security answer'}), 401
     new_salt = secrets.token_hex(16)
     new_hash = hash_password(new_password, new_salt)
     cur.execute("UPDATE users SET password_hash=%s, salt=%s, failed_attempts=0, locked_until=NULL WHERE id=%s",
                (new_hash, new_salt, user['id']))
-    conn.commit()
-    cur.close()
-    conn.close()
+    conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Password reset successfully!'})
 
 @app.route('/api/passwords', methods=['GET'])
@@ -238,8 +289,7 @@ def get_passwords():
     query += " ORDER BY created_at DESC"
     cur.execute(query, params)
     rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    cur.close(); conn.close()
     return jsonify([dict(r) for r in rows])
 
 @app.route('/api/passwords/<int:pid>', methods=['GET'])
@@ -249,8 +299,7 @@ def get_password(pid):
     cur = conn.cursor()
     cur.execute("SELECT * FROM passwords WHERE id=%s AND user_id=%s", (pid, session['user_id']))
     row = cur.fetchone()
-    cur.close()
-    conn.close()
+    cur.close(); conn.close()
     if not row:
         return jsonify({'error': 'Not found'}), 404
     row = dict(row)
@@ -262,35 +311,25 @@ def get_password(pid):
 def add_password():
     data = request.json
     if not data.get('site') or not data.get('username') or not data.get('password'):
-        return jsonify({'error': 'Site, username, and password are required'}), 400
-    encrypted = encrypt_password(data['password'])
+        return jsonify({'error': 'All fields required'}), 400
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO passwords (user_id, site, username, password, notes, category) VALUES (%s,%s,%s,%s,%s,%s)",
-        (session['user_id'], data['site'], data['username'], encrypted,
-         data.get('notes', ''), data.get('category', 'General'))
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
+    cur.execute("INSERT INTO passwords (user_id, site, username, password, notes, category) VALUES (%s,%s,%s,%s,%s,%s)",
+        (session['user_id'], data['site'], data['username'], encrypt_password(data['password']),
+         data.get('notes', ''), data.get('category', 'General')))
+    conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Password saved!'}), 201
 
 @app.route('/api/passwords/<int:pid>', methods=['PUT'])
 @login_required
 def update_password(pid):
     data = request.json
-    encrypted = encrypt_password(data['password'])
     conn = get_db()
     cur = conn.cursor()
-    cur.execute(
-        "UPDATE passwords SET site=%s, username=%s, password=%s, notes=%s, category=%s WHERE id=%s AND user_id=%s",
-        (data['site'], data['username'], encrypted,
-         data.get('notes', ''), data.get('category', 'General'), pid, session['user_id'])
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
+    cur.execute("UPDATE passwords SET site=%s, username=%s, password=%s, notes=%s, category=%s WHERE id=%s AND user_id=%s",
+        (data['site'], data['username'], encrypt_password(data['password']),
+         data.get('notes', ''), data.get('category', 'General'), pid, session['user_id']))
+    conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Updated!'})
 
 @app.route('/api/passwords/<int:pid>', methods=['DELETE'])
@@ -299,11 +338,9 @@ def delete_password(pid):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("DELETE FROM passwords WHERE id=%s AND user_id=%s", (pid, session['user_id']))
-    conn.commit()
-    cur.close()
-    conn.close()
+    conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Deleted!'})
 
 if __name__ == '__main__':
-    print("\n✅ Password Manager running at http://localhost:5000\n")
+    print("\n✅ VaultKey running at http://localhost:5000\n")
     app.run(debug=True, port=5000)

@@ -232,6 +232,8 @@
     <div class="header-right">
       <div class="sys-status">● ONLINE</div>
       <div class="user-badge" id="user-badge">USER</div>
+      <button class="btn btn-logout" onclick="openMFASetup()" style="border-color:rgba(255,140,0,0.3);color:var(--accent2);">🔐 MFA</button>
+      <button class="btn btn-logout" onclick="document.getElementById('security-info-wrap').style.display='flex'" style="border-color:rgba(255,140,0,0.3);color:var(--accent2);">🛡️ SECURITY</button>
       <button class="btn btn-logout" onclick="logout()">LOGOUT</button>
       <button class="btn btn-gen" onclick="openGenerator()">⚡ GENERATE</button>
       <button class="btn btn-primary" onclick="openAdd()">+ NEW ENTRY</button>
@@ -333,6 +335,77 @@
 <div style="position:fixed;bottom:0;left:0;right:0;z-index:10;text-align:center;padding:8px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);border-top:1px solid var(--border);background:rgba(5,5,8,0.9);">
   VAULTKEY · DESIGNED & BUILT BY <span style="color:var(--accent)">DONTAE</span> · YOUR KEYS. YOUR VAULT. YOUR RULES. · © 2026
 </div>
+<!-- MFA SETUP MODAL -->
+<div class="modal-overlay" id="mfa-modal">
+  <div class="modal">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// ENABLE MFA</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;letter-spacing:1px;">Scan this QR code with Google Authenticator or Authy to enable two-factor authentication.</p>
+    <div style="text-align:center;margin:1rem 0;background:#fff;padding:12px;border-radius:4px;display:inline-block;width:100%;">
+      <img id="mfa-qr" src="" style="width:160px;height:160px;" />
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:10px;margin-bottom:1rem;">
+      <div style="font-size:10px;color:var(--muted);font-family:Orbitron,monospace;letter-spacing:2px;margin-bottom:4px;">MANUAL ENTRY KEY:</div>
+      <div style="font-family:Orbitron,monospace;font-size:12px;color:var(--accent2);word-break:break-all;" id="mfa-secret-text"></div>
+    </div>
+    <div class="form-group">
+      <label>Enter the 6 digit code from your app to confirm</label>
+      <input type="text" id="mfa-code" placeholder="000000" maxlength="6" style="letter-spacing:8px;text-align:center;font-size:20px;" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="document.getElementById('mfa-modal').classList.remove('open')">CANCEL</button>
+      <button class="btn btn-primary" onclick="confirmMFA()">ACTIVATE MFA</button>
+    </div>
+  </div>
+</div>
+
+<!-- MFA VERIFY MODAL -->
+<div class="modal-overlay" id="mfa-verify-modal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// MFA VERIFICATION</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem;letter-spacing:1px;">Enter the 6 digit code from your authenticator app.</p>
+    <div class="form-group">
+      <label>Authentication Code</label>
+      <input type="text" id="mfa-verify-code" placeholder="000000" maxlength="6" style="letter-spacing:8px;text-align:center;font-size:24px;" onkeydown="if(event.key==='Enter')verifyMFA()" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" style="width:100%;" onclick="verifyMFA()">VERIFY & ACCESS VAULT</button>
+    </div>
+  </div>
+</div>
+
+<!-- SECURITY INFO SECTION (shown in app) -->
+<div id="security-info-wrap" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:100;align-items:center;justify-content:center;backdrop-filter:blur(6px);">
+  <div style="background:var(--surface);border:1px solid rgba(255,69,0,0.3);border-radius:4px;padding:2rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;position:relative;">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),transparent);"></div>
+    <h2 style="font-family:Orbitron,monospace;font-size:14px;color:var(--accent);margin-bottom:1.5rem;letter-spacing:3px;">// HOW YOUR DATA IS PROTECTED</h2>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
+        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔐 PASSWORD ENCRYPTION</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">All passwords are encrypted using AES-256 Fernet encryption before being stored. Even if someone accessed the database directly they would only see encrypted data — not your actual passwords.</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
+        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🛡️ ACCOUNT SECURITY</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Your master password is hashed with SHA-256 and a unique salt — it is never stored in plain text. After 5 failed login attempts your account is locked for 15 minutes to prevent brute force attacks.</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
+        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">📱 TWO FACTOR AUTHENTICATION</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Optional MFA using Google Authenticator or Authy adds a second layer of protection. Even if someone has your password they cannot access your vault without your phone.</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
+        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">⏱️ AUTO LOCK</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">Your vault automatically locks after 5 minutes of inactivity to protect your data if you step away from your device.</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;">
+        <div style="font-family:Orbitron,monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;">🔒 SECURE CONNECTION</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.6;">All data is transmitted over HTTPS — your connection is always encrypted in transit. Your data is stored in a secure PostgreSQL database with isolated user accounts.</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:1.5rem;" onclick="document.getElementById('security-info-wrap').style.display='none'">CLOSE</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -396,6 +469,11 @@ async function submitAuth(){
     const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
     const data=await res.json();
     if(!res.ok){showAuthError(data.error);return;}
+    if(data.mfa_required){
+      document.getElementById('mfa-verify-modal').classList.add('open');
+      document.getElementById('mfa-verify-code').value='';
+      return;
+    }
     showApp(data.username);
   } else if(currentTab==='register'){
     const username=document.getElementById('reg-username').value.trim();
@@ -572,7 +650,60 @@ function showToast(msg,isError=false){
   t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// AUTO LOCK after 5 minutes of inactivity
+let lockTimer;
+function resetLockTimer(){
+  clearTimeout(lockTimer);
+  lockTimer=setTimeout(()=>{
+    if(document.getElementById('app-screen').style.display==='block'){
+      showToast('VAULT LOCKED DUE TO INACTIVITY');
+      setTimeout(()=>{
+        fetch('/api/logout',{method:'POST'});
+        showAuth();
+      },2000);
+    }
+  },5*60*1000);
+}
+document.addEventListener('mousemove',resetLockTimer);
+document.addEventListener('keypress',resetLockTimer);
+document.addEventListener('click',resetLockTimer);
+resetLockTimer();
+
+// MFA SETUP
+async function openMFASetup(){
+  const res=await fetch('/api/setup-mfa',{method:'POST'});
+  const data=await res.json();
+  if(!res.ok){showToast(data.error,true);return;}
+  document.getElementById('mfa-qr').src='data:image/png;base64,'+data.qr_code;
+  document.getElementById('mfa-secret-text').textContent=data.secret;
+  document.getElementById('mfa-modal').classList.add('open');
+}
+
+async function confirmMFA(){
+  const code=document.getElementById('mfa-code').value.trim();
+  if(!code){showToast('ENTER THE 6 DIGIT CODE',true);return;}
+  const res=await fetch('/api/confirm-mfa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+  const data=await res.json();
+  if(!res.ok){showToast(data.error,true);return;}
+  showToast('MFA ENABLED SUCCESSFULLY!');
+  document.getElementById('mfa-modal').classList.remove('open');
+  document.getElementById('mfa-code').value='';
+}
+
+// MFA VERIFY on login
+async function verifyMFA(){
+  const code=document.getElementById('mfa-verify-code').value.trim();
+  if(!code){showAuthError('ENTER THE 6 DIGIT CODE');return;}
+  const res=await fetch('/api/verify-mfa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});
+  const data=await res.json();
+  if(!res.ok){showAuthError(data.error);return;}
+  showApp(data.username);
+  document.getElementById('mfa-verify-modal').classList.remove('open');
+}
+
 checkSession();
+
 </script>
 </body>
 </html>

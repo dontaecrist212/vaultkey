@@ -2,3 +2,6 @@ flask
 gunicorn
 psycopg2-binary
 cryptography
+pyotp
+qrcode[pil]
+pillow
