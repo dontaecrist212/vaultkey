@@ -16,6 +16,7 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
@@ -74,6 +75,28 @@ def init_db():
     conn.close()
 
 init_db()
+
+# ── Security headers applied to every response ───────────────────────────────
+@app.after_request
+def add_security_headers(response):
+    # CSP — fixes the -25 point penalty; allows fonts, inline styles, HIBP API
+    response.headers['Content-Security-Policy'] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data:; "
+        "connect-src 'self' https://api.pwnedpasswords.com; "
+        "frame-ancestors 'none';"
+    )
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
+# ─────────────────────────────────────────────────────────────────────────────
 
 def login_required(f):
     @wraps(f)
