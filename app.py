@@ -6,8 +6,7 @@ import os
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
-with app.app_context():
-    init_db()
+
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passwords.db')
 
@@ -178,7 +177,9 @@ def delete_password(pid):
         conn.commit()
     return jsonify({'message': 'Deleted!'})
 
-if __name__ == '__main__':
+with app.app_context():
     init_db()
+
+if __name__ == '__main__':
     print("\n✅ Password Manager running at http://localhost:5000\n")
     app.run(debug=True, port=5000)
