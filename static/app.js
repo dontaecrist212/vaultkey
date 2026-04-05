@@ -293,8 +293,8 @@ document.addEventListener('click', resetLockTimer);
 resetLockTimer();
 
 // SECURITY INFO
-function openSecurityInfo() { document.getElementById('security-info-wrap').classList.remove('hidden'); }
-function closeSecurityInfo() { document.getElementById('security-info-wrap').classList.add('hidden'); }
+function openSecurityInfo() { document.getElementById('security-info-wrap').classList.add('open'); }
+function closeSecurityInfo() { document.getElementById('security-info-wrap').classList.remove('open'); }
 
 // MFA
 async function openMFASetup() {
