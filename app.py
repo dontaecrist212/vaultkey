@@ -160,6 +160,10 @@ def login():
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE LOWER(username)=LOWER(%s)", (username,))
+    user = cur.fetchone()
+    if not user:
+        cur.close(); conn.close()
+        return jsonify({'error': 'Invalid username or password'}), 401
     locked_until = user.get('locked_until')
     if locked_until and locked_until > datetime.utcnow():
         cur.close(); conn.close()
@@ -281,6 +285,11 @@ def reset_password():
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE LOWER(username)=LOWER(%s)", (username,))
+    user = cur.fetchone()
+    if not user:
+        cur.close(); conn.close()
+        return jsonify({'error': 'Username not found'}), 404
+    if hash_answer(security_answer) != user['security_answer']:
         cur.close(); conn.close()
         return jsonify({'error': 'Incorrect security answer'}), 401
     new_salt = secrets.token_hex(16)
