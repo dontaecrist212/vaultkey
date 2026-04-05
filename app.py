@@ -8,8 +8,7 @@ app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passwords.db')
-DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passwords.db')
-init_db()
+
 
 def get_db():
     conn = sqlite3.connect(DB)
