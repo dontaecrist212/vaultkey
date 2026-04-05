@@ -159,11 +159,7 @@ def login():
     password = data.get('password', '')
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
-    user = cur.fetchone()
-    if not user:
-        cur.close(); conn.close()
-        return jsonify({'error': 'Invalid username or password'}), 401
+    cur.execute("SELECT * FROM users WHERE LOWER(username)=LOWER(%s)", (username,))
     locked_until = user.get('locked_until')
     if locked_until and locked_until > datetime.utcnow():
         cur.close(); conn.close()
@@ -265,7 +261,7 @@ def get_security_question():
     username = data.get('username', '').strip()
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT security_question FROM users WHERE username=%s", (username,))
+    cur.execute("SELECT security_question FROM users WHERE LOWER(username)=LOWER(%s)", (username,))
     user = cur.fetchone()
     cur.close(); conn.close()
     if not user or not user['security_question']:
@@ -284,12 +280,7 @@ def reset_password():
         return jsonify({'error': 'Password must be at least 6 characters'}), 400
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
-    user = cur.fetchone()
-    if not user:
-        cur.close(); conn.close()
-        return jsonify({'error': 'Username not found'}), 404
-    if hash_answer(security_answer) != user['security_answer']:
+    cur.execute("SELECT * FROM users WHERE LOWER(username)=LOWER(%s)", (username,))
         cur.close(); conn.close()
         return jsonify({'error': 'Incorrect security answer'}), 401
     new_salt = secrets.token_hex(16)
