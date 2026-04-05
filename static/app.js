@@ -1,20 +1,16 @@
 let allEntries = [], activeCategory = 'All', currentTab = 'login';
 let breachCache = {};
 
-// helpers
-function show(id) { const el = document.getElementById(id); el.classList.remove('hidden'); }
-function hide(id) { const el = document.getElementById(id); el.classList.add('hidden'); }
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function isVisible(id) { return !document.getElementById(id).classList.contains('hidden'); }
 
 // ===== LANDING =====
-function showLanding() {
-  show('landing-screen'); hide('auth-screen'); hide('app-screen');
-}
-function showAuthFromLanding(tab) {
-  hide('landing-screen'); show('auth-screen'); switchTab(tab);
-}
+function showLanding() { show('landing-screen'); hide('auth-screen'); hide('app-screen'); }
+function showAuthFromLanding(tab) { hide('landing-screen'); show('auth-screen'); switchTab(tab); }
 
-(function spawnParticles() {
+// Particles
+(function() {
   const wrap = document.getElementById('particles');
   if (!wrap) return;
   for (let i = 0; i < 20; i++) {
@@ -29,15 +25,14 @@ function showAuthFromLanding(tab) {
   }
 })();
 
+// ===== SESSION =====
 async function checkSession() {
   const res = await fetch('/api/me');
   const data = await res.json();
   if (data.logged_in) { hide('landing-screen'); showApp(data.username); }
 }
 
-function showAuth() {
-  hide('landing-screen'); show('auth-screen'); hide('app-screen');
-}
+function showAuth() { hide('landing-screen'); show('auth-screen'); hide('app-screen'); }
 
 function showApp(username) {
   hide('landing-screen'); hide('auth-screen'); show('app-screen');
@@ -45,10 +40,11 @@ function showApp(username) {
   loadAll();
 }
 
+// ===== AUTH TABS =====
 function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('.auth-tab').forEach((t, i) => {
-    t.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='register')||(i===2&&tab==='forgot'));
+  ['login','register','forgot'].forEach((t,i) => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
   });
   document.getElementById('login-fields').classList.toggle('hidden', tab !== 'login');
   document.getElementById('register-fields').classList.toggle('hidden', tab !== 'register');
@@ -65,8 +61,7 @@ async function lookupQuestion() {
   const data = await res.json();
   if (!res.ok) { showAuthError(data.error); return; }
   document.getElementById('forgot-question-label').textContent = data.security_question;
-  show('forgot-question-wrap');
-  show('auth-btn');
+  show('forgot-question-wrap'); show('auth-btn');
   document.getElementById('auth-btn').textContent = 'RESET PASSWORD';
   currentTab = 'reset';
 }
@@ -80,11 +75,7 @@ async function submitAuth() {
     const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
     const data = await res.json();
     if (!res.ok) { showAuthError(data.error); return; }
-    if (data.mfa_required) {
-      document.getElementById('mfa-verify-modal').classList.add('open');
-      document.getElementById('mfa-verify-code').value = '';
-      return;
-    }
+    if (data.mfa_required) { document.getElementById('mfa-verify-modal').classList.add('open'); document.getElementById('mfa-verify-code').value = ''; return; }
     showApp(data.username);
   } else if (currentTab === 'register') {
     const username = document.getElementById('reg-username').value.trim();
@@ -96,8 +87,7 @@ async function submitAuth() {
     const data = await res.json();
     if (!res.ok) { showAuthError(data.error); return; }
     const sucEl = document.getElementById('auth-success');
-    sucEl.textContent = 'Account created! Please log in.'; show('auth-success');
-    switchTab('login');
+    sucEl.textContent = 'Account created! Please log in.'; show('auth-success'); switchTab('login');
   } else if (currentTab === 'reset') {
     const username = document.getElementById('forgot-username').value.trim();
     const security_answer = document.getElementById('forgot-answer').value.trim();
@@ -107,18 +97,14 @@ async function submitAuth() {
     const data = await res.json();
     if (!res.ok) { showAuthError(data.error); return; }
     const sucEl = document.getElementById('auth-success');
-    sucEl.textContent = 'Password reset! Please log in.'; show('auth-success');
-    switchTab('login');
+    sucEl.textContent = 'Password reset! Please log in.'; show('auth-success'); switchTab('login');
   }
 }
 
-function showAuthError(msg) {
-  const el = document.getElementById('auth-error');
-  el.textContent = msg; show('auth-error');
-}
-
+function showAuthError(msg) { const el = document.getElementById('auth-error'); el.textContent = msg; show('auth-error'); }
 async function logout() { await fetch('/api/logout', { method: 'POST' }); showLanding(); }
 
+// ===== VAULT =====
 async function loadAll() {
   const res = await fetch('/api/passwords');
   if (res.status === 401) { showAuth(); return; }
@@ -135,11 +121,12 @@ function updateStats() {
 function renderCatFilters() {
   const used = ['All', ...new Set(allEntries.map(d => d.category).filter(Boolean))];
   document.getElementById('cat-filters').innerHTML = used.map(c =>
-    `<button class="cat-filter ${c === activeCategory ? 'active' : ''}" onclick="setCategory('${c}')">${c}</button>`
+    `<button class="cat-filter ${c === activeCategory ? 'active' : ''}" data-cat="${c}">${c}</button>`
   ).join('');
+  document.querySelectorAll('.cat-filter').forEach(btn => {
+    btn.addEventListener('click', () => { activeCategory = btn.dataset.cat; renderCatFilters(); filterEntries(); });
+  });
 }
-
-function setCategory(cat) { activeCategory = cat; renderCatFilters(); filterEntries(); }
 
 function filterEntries() {
   const q = document.getElementById('search').value.toLowerCase();
@@ -152,36 +139,33 @@ function filterEntries() {
 
 function renderCards(entries) {
   const grid = document.getElementById('cards-grid');
-  const empty = document.getElementById('empty-state');
   if (!entries.length) { grid.innerHTML = ''; show('empty-state'); return; }
   hide('empty-state');
   grid.innerHTML = entries.map(e => {
     const cached = breachCache[e.id];
-    let breachHtml = '';
-    if (cached === true) breachHtml = '<div class="breach-badge compromised">⚠ BREACHED</div>';
-    else if (cached === false) breachHtml = '<div class="breach-badge safe">✓ SECURE</div>';
-    return `
-    <div class="card" id="card-${e.id}">
+    let breachHtml = cached === true ? '<div class="breach-badge compromised">⚠ BREACHED</div>' : cached === false ? '<div class="breach-badge safe">✓ SECURE</div>' : '';
+    return `<div class="card" id="card-${e.id}">
       <div class="card-corner"></div><div class="card-corner-bl"></div>
-      <div class="card-header">
-        <div class="card-site">${esc(e.site)}</div>
-        <span class="cat-tag ${esc(e.category || 'General')}">${esc(e.category || 'General')}</span>
-      </div>
+      <div class="card-header"><div class="card-site">${esc(e.site)}</div><span class="cat-tag ${esc(e.category||'General')}">${esc(e.category||'General')}</span></div>
       <div class="card-user">${esc(e.username)}</div>
-      <div class="card-pass">
-        <span class="card-pass-text" id="pw-${e.id}">● ● ● ● ● ● ● ●</span>
-        <button class="eye-btn" onclick="togglePass(${e.id})">👁</button>
-        <button class="copy-btn" onclick="copyPass(${e.id})">📋</button>
+      <div class="card-pass"><span class="card-pass-text" id="pw-${e.id}">● ● ● ● ● ● ● ●</span>
+        <button class="eye-btn" data-id="${e.id}">👁</button>
+        <button class="copy-btn" data-id="${e.id}">📋</button>
       </div>
       ${breachHtml}
       ${e.notes ? `<div class="card-notes">${esc(e.notes)}</div>` : ''}
       <div class="card-actions">
-        <button class="btn btn-sm btn-edit" onclick="openEdit(${e.id})">EDIT</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteEntry(${e.id})">DELETE</button>
+        <button class="btn btn-sm btn-edit edit-btn" data-id="${e.id}">EDIT</button>
+        <button class="btn btn-sm btn-danger delete-btn" data-id="${e.id}">DELETE</button>
       </div>
       <div class="card-date">LOGGED: ${new Date(e.created_at).toLocaleDateString()}</div>
     </div>`;
   }).join('');
+  // attach card button listeners
+  grid.querySelectorAll('.eye-btn').forEach(btn => btn.addEventListener('click', () => togglePass(btn.dataset.id)));
+  grid.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', () => copyPass(btn.dataset.id)));
+  grid.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEdit(btn.dataset.id)));
+  grid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -203,6 +187,7 @@ function openAdd() {
   document.getElementById('edit-id').value = '';
   ['f-site','f-user','f-pass','f-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-category').value = 'General';
+  document.getElementById('f-pass').type = 'password';
   document.getElementById('entry-modal').classList.add('open');
 }
 
@@ -218,14 +203,13 @@ async function openEdit(id) {
   document.getElementById('entry-modal').classList.add('open');
 }
 
-function closeModal() { document.getElementById('entry-modal').classList.remove('open'); }
-
 async function saveEntry() {
   const id = document.getElementById('edit-id').value;
   const body = { site: document.getElementById('f-site').value.trim(), username: document.getElementById('f-user').value.trim(), password: document.getElementById('f-pass').value, notes: document.getElementById('f-notes').value.trim(), category: document.getElementById('f-category').value };
   if (!body.site || !body.username || !body.password) { showToast('ALL FIELDS REQUIRED', true); return; }
   await fetch(id ? `/api/passwords/${id}` : '/api/passwords', { method: id ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  closeModal(); showToast(id ? 'ENTRY UPDATED' : 'ENTRY ENCRYPTED & SAVED'); loadAll();
+  document.getElementById('entry-modal').classList.remove('open');
+  showToast(id ? 'ENTRY UPDATED' : 'ENTRY ENCRYPTED & SAVED'); loadAll();
 }
 
 async function deleteEntry(id) {
@@ -234,8 +218,7 @@ async function deleteEntry(id) {
   showToast('ENTRY PURGED FROM VAULT'); loadAll();
 }
 
-function toggleFieldPass(fieldId) { const f = document.getElementById(fieldId); f.type = f.type === 'password' ? 'text' : 'password'; }
-
+// ===== GENERATOR =====
 let lastGen = '';
 function openGenerator() { document.getElementById('gen-modal').classList.add('open'); generatePassword(); }
 function generatePassword() {
@@ -253,19 +236,13 @@ function generatePassword() {
 }
 function updateStrength(pw) {
   let s = 0;
-  if (pw.length >= 12) s++; if (pw.length >= 16) s++;
+  if (pw.length>=12) s++; if (pw.length>=16) s++;
   if (/[A-Z]/.test(pw)) s++; if (/[0-9]/.test(pw)) s++; if (/[^A-Za-z0-9]/.test(pw)) s++;
   const colors = ['#ff2020','#ff4500','#ff8c00','#ffb347','#00ff88'], widths = ['20%','40%','60%','80%','100%'];
-  const bar = document.getElementById('strength-bar');
-  bar.style.background = colors[Math.min(s,4)]; bar.style.width = widths[Math.min(s,4)];
+  document.getElementById('strength-bar').style.background = colors[Math.min(s,4)];
+  document.getElementById('strength-bar').style.width = widths[Math.min(s,4)];
 }
-function copyGenerated() { if (!lastGen) return; navigator.clipboard.writeText(lastGen).then(() => showToast('KEY COPIED TO CLIPBOARD')); }
-function quickFillGen() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let pw = ''; for (let i = 0; i < 16; i++) pw += chars[Math.floor(Math.random() * chars.length)];
-  document.getElementById('f-pass').value = pw; document.getElementById('f-pass').type = 'text';
-  showToast('ACCESS KEY GENERATED');
-}
+
 function showToast(msg, isError = false) {
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -274,29 +251,7 @@ function showToast(msg, isError = false) {
   t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
-
-// AUTO LOCK
-let lockTimer;
-function resetLockTimer() {
-  clearTimeout(lockTimer);
-  lockTimer = setTimeout(() => {
-    if (isVisible('app-screen')) {
-      showToast('VAULT LOCKED DUE TO INACTIVITY');
-      setTimeout(() => { fetch('/api/logout', { method: 'POST' }); showLanding(); }, 2000);
-    }
-  }, 5 * 60 * 1000);
-}
-document.addEventListener('mousemove', resetLockTimer);
-document.addEventListener('keypress', resetLockTimer);
-document.addEventListener('click', resetLockTimer);
-resetLockTimer();
-
-// SECURITY INFO
-function openSecurityInfo() { document.getElementById('security-info-wrap').classList.add('open'); }
-function closeSecurityInfo() { document.getElementById('security-info-wrap').classList.remove('open'); }
-
-// MFA
+// ===== MFA =====
 async function openMFASetup() {
   const res = await fetch('/api/setup-mfa', { method: 'POST' });
   const data = await res.json();
@@ -311,9 +266,7 @@ async function confirmMFA() {
   const res = await fetch('/api/confirm-mfa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
   const data = await res.json();
   if (!res.ok) { showToast(data.error, true); return; }
-  showToast('MFA ENABLED SUCCESSFULLY!');
-  document.getElementById('mfa-modal').classList.remove('open');
-  document.getElementById('mfa-code').value = '';
+  showToast('MFA ENABLED!'); document.getElementById('mfa-modal').classList.remove('open');
 }
 async function verifyMFA() {
   const code = document.getElementById('mfa-verify-code').value.trim();
@@ -321,27 +274,25 @@ async function verifyMFA() {
   const res = await fetch('/api/verify-mfa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
   const data = await res.json();
   if (!res.ok) { showAuthError(data.error); return; }
-  showApp(data.username);
-  document.getElementById('mfa-verify-modal').classList.remove('open');
+  showApp(data.username); document.getElementById('mfa-verify-modal').classList.remove('open');
 }
 
-// BREACH CHECKER
+// ===== BREACH =====
 async function sha1(str) {
   const buf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').toUpperCase();
 }
 async function checkPasswordBreach(password) {
-  const hash = await sha1(password);
-  const prefix = hash.slice(0,5), suffix = hash.slice(5);
+  const hash = await sha1(password), prefix = hash.slice(0,5), suffix = hash.slice(5);
   try {
     const res = await fetch(`https://api.pwnedpasswords.com/range/${prefix}`, { headers: { 'Add-Padding': 'true' } });
     if (!res.ok) return { breached: false, count: 0, error: 'API unavailable' };
     for (const line of (await res.text()).split('\n')) {
-      const [h, c] = line.trim().split(':');
+      const [h,c] = line.trim().split(':');
       if (h === suffix) return { breached: true, count: parseInt(c) };
     }
     return { breached: false, count: 0 };
-  } catch (e) { return { breached: false, count: 0, error: 'Network error' }; }
+  } catch(e) { return { breached: false, count: 0, error: 'Network error' }; }
 }
 function openBreachChecker() {
   document.getElementById('breach-modal').classList.add('open');
@@ -357,13 +308,13 @@ async function checkBreach() {
   const resEl = document.getElementById('breach-result');
   if (result.error) {
     resEl.className = 'breach-result compromised';
-    resEl.innerHTML = `<div class="breach-result-title">⚠ CHECK FAILED</div><div class="breach-result-detail">${result.error}. Try again later.</div>`;
+    resEl.innerHTML = `<div class="breach-result-title">⚠ CHECK FAILED</div><div class="breach-result-detail">${result.error}</div>`;
   } else if (result.breached) {
     resEl.className = 'breach-result compromised';
-    resEl.innerHTML = `<div class="breach-result-title">⚠ PASSWORD COMPROMISED</div><div class="breach-result-detail">This password has appeared <strong>${result.count.toLocaleString()} times</strong> in known data breaches. Change it immediately.</div>`;
+    resEl.innerHTML = `<div class="breach-result-title">⚠ PASSWORD COMPROMISED</div><div class="breach-result-detail">Found <strong>${result.count.toLocaleString()} times</strong> in known data breaches. Change it immediately.</div>`;
   } else {
     resEl.className = 'breach-result safe';
-    resEl.innerHTML = '<div class="breach-result-title">✓ PASSWORD SECURE</div><div class="breach-result-detail">This password has not been found in any known data breaches.</div>';
+    resEl.innerHTML = '<div class="breach-result-title">✓ PASSWORD SECURE</div><div class="breach-result-detail">Not found in any known data breaches.</div>';
   }
 }
 async function checkAllBreaches() {
@@ -373,22 +324,21 @@ async function checkAllBreaches() {
   btn.disabled = true; btn.textContent = 'SCANNING...'; show('scan-all-progress');
   let compromised = 0;
   for (let i = 0; i < allEntries.length; i++) {
-    const entry = allEntries[i];
-    prog.textContent = `SCANNING ${i+1}/${allEntries.length}: ${entry.site.toUpperCase()}`;
-    const fullData = await (await fetch(`/api/passwords/${entry.id}`)).json();
+    prog.textContent = `SCANNING ${i+1}/${allEntries.length}: ${allEntries[i].site.toUpperCase()}`;
+    const fullData = await (await fetch(`/api/passwords/${allEntries[i].id}`)).json();
     const result = await checkPasswordBreach(fullData.password);
-    breachCache[entry.id] = result.breached;
+    breachCache[allEntries[i].id] = result.breached;
     if (result.breached) compromised++;
     await new Promise(r => setTimeout(r, 150));
   }
   btn.disabled = false; btn.textContent = '⚡ SCAN ENTIRE VAULT';
-  prog.textContent = `SCAN COMPLETE — ${compromised} COMPROMISED / ${allEntries.length} TOTAL`;
+  prog.textContent = `COMPLETE — ${compromised} COMPROMISED / ${allEntries.length} TOTAL`;
   filterEntries();
-  if (compromised > 0) showToast(`⚠ ${compromised} BREACHED PASSWORDS FOUND`, true);
+  if (compromised > 0) showToast(`⚠ ${compromised} BREACHED FOUND`, true);
   else showToast('ALL PASSWORDS SECURE ✓');
 }
 
-// HEALTH DASHBOARD
+// ===== HEALTH =====
 function openHealthDashboard() { document.getElementById('health-modal').classList.add('open'); runHealthCheck(); }
 async function runHealthCheck() {
   const content = document.getElementById('health-content');
@@ -416,8 +366,7 @@ async function runHealthCheck() {
   const score = Math.round(((decrypted.length - issues.size) / decrypted.length) * 100);
   const scoreColor = score>=80?'var(--green)':score>=50?'var(--yellow)':'var(--danger)';
   const scoreLabel = score>=80?'EXCELLENT':score>=60?'GOOD':score>=40?'FAIR':'CRITICAL';
-  let html = `
-  <div class="overall-score-wrap">
+  let html = `<div class="overall-score-wrap">
     <div class="overall-score-num" style="color:${scoreColor}">${score}</div>
     <div class="overall-score-details">
       <div class="overall-score-title" style="color:${scoreColor}">VAULT HEALTH: ${scoreLabel}</div>
@@ -433,11 +382,96 @@ async function runHealthCheck() {
   if (weak.length) html += `<div class="health-section"><div class="health-section-title red">⚠ WEAK PASSWORDS (${weak.length})</div>${weak.map(e=>`<div class="health-item"><div><div class="health-item-site">${esc(e.site)}</div><div class="health-item-detail">${esc(e.username)}</div></div><span class="health-item-badge red">WEAK</span></div>`).join('')}</div>`;
   if (reused.length) {
     const groups = Object.values(pwGroups).filter(g=>g.length>1);
-    html += `<div class="health-section"><div class="health-section-title yellow">⚡ REUSED PASSWORDS (${reused.length} entries)</div>${groups.map(group=>`<div class="health-item health-item-col"><div class="health-item-row"><div class="health-item-reused-label">SAME PASSWORD ON ${group.length} SITES:</div><span class="health-item-badge yellow">REUSED</span></div><div class="health-item-chips">${group.map(e=>`<span class="health-chip">${esc(e.site)}</span>`).join('')}</div></div>`).join('')}</div>`;
+    html += `<div class="health-section"><div class="health-section-title yellow">⚡ REUSED (${reused.length} entries)</div>${groups.map(g=>`<div class="health-item health-item-col"><div class="health-item-row"><div class="health-item-reused-label">SAME PASSWORD ON ${g.length} SITES:</div><span class="health-item-badge yellow">REUSED</span></div><div class="health-item-chips">${g.map(e=>`<span class="health-chip">${esc(e.site)}</span>`).join('')}</div></div>`).join('')}</div>`;
   }
-  if (old.length) html += `<div class="health-section"><div class="health-section-title yellow">🕒 OUTDATED PASSWORDS (${old.length})</div>${old.map(e=>{const days=Math.floor((now-new Date(e.created_at))/(1000*60*60*24));return`<div class="health-item"><div><div class="health-item-site">${esc(e.site)}</div><div class="health-item-detail">${esc(e.username)}</div></div><span class="health-item-badge yellow">${days}D OLD</span></div>`;}).join('')}</div>`;
-  if (!issues.size) html += `<div class="health-all-clear"><div class="health-all-clear-icon">✓</div><div class="health-all-clear-title">ALL PASSWORDS HEALTHY</div><div class="health-all-clear-text">No weak, reused, or outdated passwords detected.</div></div>`;
+  if (old.length) html += `<div class="health-section"><div class="health-section-title yellow">🕒 OUTDATED (${old.length})</div>${old.map(e=>{const days=Math.floor((now-new Date(e.created_at))/(1000*60*60*24));return`<div class="health-item"><div><div class="health-item-site">${esc(e.site)}</div><div class="health-item-detail">${esc(e.username)}</div></div><span class="health-item-badge yellow">${days}D OLD</span></div>`;}).join('')}</div>`;
+  if (!issues.size) html += `<div class="health-all-clear"><div class="health-all-clear-icon">✓</div><div class="health-all-clear-title">ALL PASSWORDS HEALTHY</div></div>`;
   content.innerHTML = html;
 }
+
+// AUTO LOCK
+let lockTimer;
+function resetLockTimer() {
+  clearTimeout(lockTimer);
+  lockTimer = setTimeout(() => {
+    if (isVisible('app-screen')) {
+      showToast('VAULT LOCKED DUE TO INACTIVITY');
+      setTimeout(() => { fetch('/api/logout', { method: 'POST' }); showLanding(); }, 2000);
+    }
+  }, 5 * 60 * 1000);
+}
+document.addEventListener('mousemove', resetLockTimer);
+document.addEventListener('keypress', resetLockTimer);
+document.addEventListener('click', resetLockTimer);
+resetLockTimer();
+
+// ===== WIRE UP ALL EVENT LISTENERS =====
+document.addEventListener('DOMContentLoaded', () => {
+  // Landing
+  document.getElementById('nav-login-btn').addEventListener('click', () => showAuthFromLanding('login'));
+  document.getElementById('nav-register-btn').addEventListener('click', () => showAuthFromLanding('register'));
+  document.getElementById('cta-login-btn').addEventListener('click', () => showAuthFromLanding('login'));
+  document.getElementById('cta-register-btn').addEventListener('click', () => showAuthFromLanding('register'));
+
+  // Auth tabs
+  document.getElementById('tab-login').addEventListener('click', () => switchTab('login'));
+  document.getElementById('tab-register').addEventListener('click', () => switchTab('register'));
+  document.getElementById('tab-forgot').addEventListener('click', () => switchTab('forgot'));
+  document.getElementById('auth-btn').addEventListener('click', submitAuth);
+  document.getElementById('lookup-btn').addEventListener('click', lookupQuestion);
+  document.getElementById('back-to-landing-link').addEventListener('click', showLanding);
+  document.getElementById('auth-username').addEventListener('keydown', e => { if (e.key==='Enter') submitAuth(); });
+  document.getElementById('auth-password').addEventListener('keydown', e => { if (e.key==='Enter') submitAuth(); });
+
+  // App header
+  document.getElementById('logout-btn').addEventListener('click', logout);
+  document.getElementById('health-btn').addEventListener('click', openHealthDashboard);
+  document.getElementById('breach-btn').addEventListener('click', openBreachChecker);
+  document.getElementById('mfa-setup-btn').addEventListener('click', openMFASetup);
+  document.getElementById('security-info-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.add('open'));
+  document.getElementById('generator-btn').addEventListener('click', openGenerator);
+  document.getElementById('new-entry-btn').addEventListener('click', openAdd);
+  document.getElementById('close-security-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.remove('open'));
+
+  // Search
+  document.getElementById('search').addEventListener('input', filterEntries);
+
+  // Entry modal
+  document.getElementById('close-modal-btn').addEventListener('click', () => document.getElementById('entry-modal').classList.remove('open'));
+  document.getElementById('save-entry-btn').addEventListener('click', saveEntry);
+  document.getElementById('toggle-pass-btn').addEventListener('click', () => { const f = document.getElementById('f-pass'); f.type = f.type==='password'?'text':'password'; });
+  document.getElementById('quick-gen-btn').addEventListener('click', () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let pw = ''; for (let i=0;i<16;i++) pw+=chars[Math.floor(Math.random()*chars.length)];
+    document.getElementById('f-pass').value = pw; document.getElementById('f-pass').type = 'text';
+    showToast('ACCESS KEY GENERATED');
+  });
+
+  // Generator modal
+  document.getElementById('close-gen-btn').addEventListener('click', () => document.getElementById('gen-modal').classList.remove('open'));
+  document.getElementById('regen-btn').addEventListener('click', generatePassword);
+  document.getElementById('copy-gen-btn').addEventListener('click', () => { if (lastGen) navigator.clipboard.writeText(lastGen).then(() => showToast('KEY COPIED')); });
+  document.getElementById('g-len').addEventListener('input', () => { document.getElementById('g-len-val').textContent = document.getElementById('g-len').value; generatePassword(); });
+  ['g-upper','g-lower','g-nums','g-syms'].forEach(id => document.getElementById(id).addEventListener('change', generatePassword));
+
+  // Breach modal
+  document.getElementById('close-breach-btn').addEventListener('click', () => document.getElementById('breach-modal').classList.remove('open'));
+  document.getElementById('breach-scan-btn').addEventListener('click', checkBreach);
+  document.getElementById('breach-input').addEventListener('keydown', e => { if (e.key==='Enter') checkBreach(); });
+  document.getElementById('scan-all-btn').addEventListener('click', checkAllBreaches);
+
+  // Health modal
+  document.getElementById('close-health-btn').addEventListener('click', () => document.getElementById('health-modal').classList.remove('open'));
+  document.getElementById('refresh-health-btn').addEventListener('click', runHealthCheck);
+
+  // MFA modals
+  document.getElementById('close-mfa-btn').addEventListener('click', () => document.getElementById('mfa-modal').classList.remove('open'));
+  document.getElementById('confirm-mfa-btn').addEventListener('click', confirmMFA);
+  document.getElementById('verify-mfa-btn').addEventListener('click', verifyMFA);
+  document.getElementById('mfa-verify-code').addEventListener('keydown', e => { if (e.key==='Enter') verifyMFA(); });
+
+  // Close modals on backdrop click
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); }));
+});
 
 checkSession();

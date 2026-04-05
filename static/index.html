@@ -15,8 +15,8 @@
   <nav class="land-nav">
     <div class="land-logo">VAULT<span>KEY</span></div>
     <div class="land-nav-btns">
-      <button class="btn btn-gen" onclick="showAuthFromLanding('login')">LOGIN</button>
-      <button class="btn btn-primary" onclick="showAuthFromLanding('register')">GET STARTED</button>
+      <button class="btn btn-gen" id="nav-login-btn">LOGIN</button>
+      <button class="btn btn-primary" id="nav-register-btn">GET STARTED</button>
     </div>
   </nav>
   <div class="land-hero">
@@ -32,8 +32,8 @@
     </div>
     <p class="land-sub">AES-256 encrypted password management with MFA, breach detection, and health monitoring. Built for people who take security seriously.</p>
     <div class="land-cta">
-      <button class="btn btn-primary" onclick="showAuthFromLanding('register')">⚡ SECURE MY VAULT</button>
-      <button class="btn btn-gen" onclick="showAuthFromLanding('login')">ACCESS VAULT →</button>
+      <button class="btn btn-primary" id="cta-register-btn">⚡ SECURE MY VAULT</button>
+      <button class="btn btn-gen" id="cta-login-btn">ACCESS VAULT →</button>
     </div>
   </div>
   <div class="land-stats-bar">
@@ -44,7 +44,7 @@
   </div>
   <hr class="land-divider">
   <div class="land-features">
-    <div class="feat-card"><div class="feat-icon">🔐</div><div class="feat-title">AES-256 Encryption</div><div class="feat-desc">Every password is encrypted with military-grade Fernet AES-256 before it ever touches the database.</div></div>
+    <div class="feat-card"><div class="feat-icon">🔐</div><div class="feat-title">AES-256 Encryption</div><div class="feat-desc">Every password is encrypted with Fernet AES-256 before it ever touches the database.</div></div>
     <div class="feat-card"><div class="feat-icon">🛡️</div><div class="feat-title">Breach Detection</div><div class="feat-desc">Instantly check if your passwords appear in known data breaches via HaveIBeenPwned — over 10 billion compromised credentials scanned.</div></div>
     <div class="feat-card"><div class="feat-icon">💪</div><div class="feat-title">Password Health</div><div class="feat-desc">Full health report of your vault — weak passwords, reused credentials, and outdated accounts all in one dashboard.</div></div>
     <div class="feat-card"><div class="feat-icon">📱</div><div class="feat-title">Google Authenticator MFA</div><div class="feat-desc">TOTP-based multi-factor authentication. Even if your master password is stolen, your vault stays locked.</div></div>
@@ -61,15 +61,15 @@
     <div class="auth-logo">VAULT<span>KEY</span></div>
     <div class="auth-sub">SECURE ACCESS SYSTEM v2.0</div>
     <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchTab('login')">LOGIN</button>
-      <button class="auth-tab" onclick="switchTab('register')">REGISTER</button>
-      <button class="auth-tab" onclick="switchTab('forgot')">FORGOT</button>
+      <button class="auth-tab active" id="tab-login">LOGIN</button>
+      <button class="auth-tab" id="tab-register">REGISTER</button>
+      <button class="auth-tab" id="tab-forgot">FORGOT</button>
     </div>
-    <div class="auth-error" id="auth-error"></div>
-    <div class="auth-success" id="auth-success"></div>
+    <div class="auth-error hidden" id="auth-error"></div>
+    <div class="auth-success hidden" id="auth-success"></div>
     <div id="login-fields">
-      <div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" /></div>
-      <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" /></div>
+      <div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="Enter username" /></div>
+      <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="Enter password" /></div>
     </div>
     <div id="register-fields" class="hidden">
       <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Choose a username" /></div>
@@ -93,27 +93,27 @@
         <div class="form-group"><label id="forgot-question-label">Security Question</label><input type="text" id="forgot-answer" placeholder="Your answer" /></div>
         <div class="form-group"><label>New Password</label><input type="password" id="forgot-newpass" placeholder="Enter new password (min 6 chars)" /></div>
       </div>
-      <button class="btn btn-gen" onclick="lookupQuestion()">FIND MY ACCOUNT →</button>
+      <button class="btn btn-gen" id="lookup-btn">FIND MY ACCOUNT →</button>
     </div>
-    <button class="btn btn-primary" id="auth-btn" onclick="submitAuth()">ACCESS VAULT</button>
-    <div class="back-to-landing"><a onclick="showLanding()">← BACK TO HOME</a></div>
+    <button class="btn btn-primary" id="auth-btn">ACCESS VAULT</button>
+    <div class="back-to-landing"><a id="back-to-landing-link">← BACK TO HOME</a></div>
   </div>
 </div>
 
 <!-- MAIN APP -->
-<div class="app-screen" id="app-screen">
+<div class="app-screen hidden" id="app-screen">
   <header>
     <div class="logo">VAULT<span>KEY</span><span class="logo-sub">BUILT BY DONTAE · YOUR KEYS. YOUR VAULT. YOUR RULES.</span></div>
     <div class="header-right">
       <div class="sys-status">● ONLINE</div>
       <div class="user-badge" id="user-badge">USER</div>
-      <button class="btn btn-health" onclick="openHealthDashboard()">💪 HEALTH</button>
-      <button class="btn btn-breach" onclick="openBreachChecker()">🔴 BREACH CHECK</button>
-      <button class="btn btn-mfa" onclick="openMFASetup()">🔐 MFA</button>
-      <button class="btn btn-mfa" onclick="openSecurityInfo()">🛡️ SECURITY</button>
-      <button class="btn btn-logout" onclick="logout()">LOGOUT</button>
-      <button class="btn btn-gen" onclick="openGenerator()">⚡ GENERATE</button>
-      <button class="btn btn-primary" onclick="openAdd()">+ NEW ENTRY</button>
+      <button class="btn btn-health" id="health-btn">💪 HEALTH</button>
+      <button class="btn btn-breach" id="breach-btn">🔴 BREACH CHECK</button>
+      <button class="btn btn-mfa" id="mfa-setup-btn">🔐 MFA</button>
+      <button class="btn btn-mfa" id="security-info-btn">🛡️ SECURITY</button>
+      <button class="btn btn-logout" id="logout-btn">LOGOUT</button>
+      <button class="btn btn-gen" id="generator-btn">⚡ GENERATE</button>
+      <button class="btn btn-primary" id="new-entry-btn">+ NEW ENTRY</button>
     </div>
   </header>
   <div class="container">
@@ -125,7 +125,7 @@
     <div class="top-bar">
       <div class="search-wrap">
         <span class="search-icon">◈</span>
-        <input type="text" id="search" placeholder="SEARCH ENCRYPTED VAULT..." oninput="filterEntries()" />
+        <input type="text" id="search" placeholder="SEARCH ENCRYPTED VAULT..." />
       </div>
       <span class="count-badge" id="result-count">0 RECORDS</span>
     </div>
@@ -134,7 +134,7 @@
       <div id="cat-filters"></div>
     </div>
     <div class="grid" id="cards-grid"></div>
-    <div class="empty" id="empty-state" style="display:none">
+    <div class="empty hidden" id="empty-state">
       <div class="empty-icon">🔐</div>
       <h3>VAULT IS EMPTY</h3>
       <p>Initialize your first encrypted entry to begin.</p>
@@ -155,8 +155,8 @@
       <div class="pass-input-wrap">
         <input type="password" id="f-pass" placeholder="Enter password" />
         <div class="pass-actions">
-          <button class="eye-btn" onclick="toggleFieldPass('f-pass')">👁</button>
-          <button class="copy-btn" onclick="quickFillGen()" title="Generate">⚡</button>
+          <button class="eye-btn" id="toggle-pass-btn">👁</button>
+          <button class="copy-btn" id="quick-gen-btn" title="Generate">⚡</button>
         </div>
       </div>
     </div>
@@ -171,8 +171,8 @@
     </div>
     <div class="form-group"><label>Intel / Notes</label><textarea id="f-notes" placeholder="Additional information..."></textarea></div>
     <div class="modal-footer">
-      <button class="btn btn-cancel" onclick="closeModal()">ABORT</button>
-      <button class="btn btn-primary" onclick="saveEntry()">ENCRYPT &amp; SAVE</button>
+      <button class="btn btn-cancel" id="close-modal-btn">ABORT</button>
+      <button class="btn btn-primary" id="save-entry-btn">ENCRYPT &amp; SAVE</button>
     </div>
   </div>
 </div>
@@ -191,7 +191,7 @@
     </div>
     <div class="gen-opt">
       <span class="strength-label">LENGTH:</span>
-      <input type="range" id="g-len" min="8" max="32" value="16" oninput="document.getElementById('g-len-val').textContent=this.value;generatePassword()" />
+      <input type="range" id="g-len" min="8" max="32" value="16" />
       <span id="g-len-val">16</span>
     </div>
     <div class="strength-wrap">
@@ -199,9 +199,9 @@
       <div class="strength-bar-bg"><div class="strength-bar" id="strength-bar"></div></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-cancel" onclick="document.getElementById('gen-modal').classList.remove('open')">CLOSE</button>
-      <button class="btn btn-edit btn-sm" onclick="copyGenerated()">📋 COPY KEY</button>
-      <button class="btn btn-primary" onclick="generatePassword()">GENERATE ↻</button>
+      <button class="btn btn-cancel" id="close-gen-btn">CLOSE</button>
+      <button class="btn btn-edit btn-sm" id="copy-gen-btn">📋 COPY KEY</button>
+      <button class="btn btn-primary" id="regen-btn">GENERATE ↻</button>
     </div>
   </div>
 </div>
@@ -211,21 +211,21 @@
   <div class="modal modal-wide-breach">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// BREACH DETECTOR</h2>
-    <p>Check if a password has appeared in known data breaches. Uses k-anonymity — only the first 5 chars of the hash are sent.</p>
+    <p class="modal-desc">Check if a password has appeared in known data breaches. Uses k-anonymity — only the first 5 chars of the hash are sent.</p>
     <div class="breach-input-wrap">
-      <input type="password" id="breach-input" placeholder="Enter password to check..." onkeydown="if(event.key==='Enter')checkBreach()" />
-      <button class="btn btn-primary" onclick="checkBreach()">SCAN</button>
+      <input type="password" id="breach-input" placeholder="Enter password to check..." />
+      <button class="btn btn-primary" id="breach-scan-btn">SCAN</button>
     </div>
-    <div class="breach-loading" id="breach-loading">SCANNING BREACH DATABASE</div>
-    <div class="breach-result" id="breach-result"></div>
+    <div class="breach-loading hidden" id="breach-loading">SCANNING BREACH DATABASE</div>
+    <div class="breach-result hidden" id="breach-result"></div>
     <div class="breach-vault-section">
       <div class="strength-label">SCAN ALL VAULT ENTRIES</div>
       <p>Check every saved password against the breach database at once.</p>
-      <button class="btn btn-gen" id="scan-all-btn" onclick="checkAllBreaches()">⚡ SCAN ENTIRE VAULT</button>
+      <button class="btn btn-gen" id="scan-all-btn">⚡ SCAN ENTIRE VAULT</button>
       <div id="scan-all-progress" class="hidden"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-cancel" onclick="document.getElementById('breach-modal').classList.remove('open')">CLOSE</button>
+      <button class="btn btn-cancel" id="close-breach-btn">CLOSE</button>
     </div>
   </div>
 </div>
@@ -237,8 +237,8 @@
     <h2>// PASSWORD HEALTH REPORT</h2>
     <div id="health-content"></div>
     <div class="modal-footer">
-      <button class="btn btn-cancel" onclick="document.getElementById('health-modal').classList.remove('open')">CLOSE</button>
-      <button class="btn btn-primary" onclick="runHealthCheck()">↻ REFRESH</button>
+      <button class="btn btn-cancel" id="close-health-btn">CLOSE</button>
+      <button class="btn btn-primary" id="refresh-health-btn">↻ REFRESH</button>
     </div>
   </div>
 </div>
@@ -248,7 +248,7 @@
   <div class="modal">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// ENABLE MFA</h2>
-    <p>Scan this QR code with Google Authenticator or Authy to enable two-factor authentication.</p>
+    <p class="modal-desc">Scan this QR code with Google Authenticator or Authy.</p>
     <div class="mfa-qr-wrap"><img id="mfa-qr" src="" alt="MFA QR Code" /></div>
     <div class="mfa-secret-box">
       <div class="mfa-secret-label">MANUAL ENTRY KEY:</div>
@@ -259,8 +259,8 @@
       <input type="text" id="mfa-code" placeholder="000000" maxlength="6" class="mfa-code-input" />
     </div>
     <div class="modal-footer">
-      <button class="btn btn-cancel" onclick="document.getElementById('mfa-modal').classList.remove('open')">CANCEL</button>
-      <button class="btn btn-primary" onclick="confirmMFA()">ACTIVATE MFA</button>
+      <button class="btn btn-cancel" id="close-mfa-btn">CANCEL</button>
+      <button class="btn btn-primary" id="confirm-mfa-btn">ACTIVATE MFA</button>
     </div>
   </div>
 </div>
@@ -270,13 +270,13 @@
   <div class="modal modal-narrow">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// MFA VERIFICATION</h2>
-    <p>Enter the 6 digit code from your authenticator app.</p>
+    <p class="modal-desc">Enter the 6 digit code from your authenticator app.</p>
     <div class="form-group">
       <label>Authentication Code</label>
-      <input type="text" id="mfa-verify-code" placeholder="000000" maxlength="6" class="mfa-verify-input" onkeydown="if(event.key==='Enter')verifyMFA()" />
+      <input type="text" id="mfa-verify-code" placeholder="000000" maxlength="6" class="mfa-verify-input" />
     </div>
     <div class="modal-footer">
-      <button class="btn btn-primary" onclick="verifyMFA()">VERIFY &amp; ACCESS VAULT</button>
+      <button class="btn btn-primary" id="verify-mfa-btn">VERIFY &amp; ACCESS VAULT</button>
     </div>
   </div>
 </div>
@@ -287,20 +287,19 @@
     <div class="sec-info-bar"></div>
     <h2 class="sec-info-title">// HOW YOUR DATA IS PROTECTED</h2>
     <div class="sec-info-items">
-      <div class="sec-info-item"><div class="sec-info-item-title">🔐 PASSWORD ENCRYPTION</div><div class="sec-info-item-text">All passwords are encrypted using AES-256 Fernet encryption before being stored. Even direct database access would only reveal encrypted data.</div></div>
-      <div class="sec-info-item"><div class="sec-info-item-title">🛡️ ACCOUNT SECURITY</div><div class="sec-info-item-text">Your master password is hashed with SHA-256 and a unique salt — never stored in plain text. After 5 failed attempts your account locks for 15 minutes.</div></div>
+      <div class="sec-info-item"><div class="sec-info-item-title">🔐 PASSWORD ENCRYPTION</div><div class="sec-info-item-text">All passwords are encrypted using AES-256 Fernet encryption before being stored.</div></div>
+      <div class="sec-info-item"><div class="sec-info-item-title">🛡️ ACCOUNT SECURITY</div><div class="sec-info-item-text">Your master password is hashed with SHA-256 and a unique salt. After 5 failed attempts your account locks for 15 minutes.</div></div>
       <div class="sec-info-item"><div class="sec-info-item-title">📱 TWO FACTOR AUTHENTICATION</div><div class="sec-info-item-text">Optional MFA using Google Authenticator or Authy. Even with your password, attackers cannot access your vault without your phone.</div></div>
       <div class="sec-info-item"><div class="sec-info-item-title">⏱️ AUTO LOCK</div><div class="sec-info-item-text">Your vault automatically locks after 5 minutes of inactivity.</div></div>
       <div class="sec-info-item"><div class="sec-info-item-title">🔒 SECURE CONNECTION</div><div class="sec-info-item-text">All data transmitted over HTTPS. Stored in a secure PostgreSQL database with isolated user accounts.</div></div>
-      <div class="sec-info-item"><div class="sec-info-item-title">🔴 BREACH DETECTION</div><div class="sec-info-item-text">Passwords checked against HaveIBeenPwned using k-anonymity. Only 5 chars of the SHA-1 hash are sent — your password never leaves your device.</div></div>
+      <div class="sec-info-item"><div class="sec-info-item-title">🔴 BREACH DETECTION</div><div class="sec-info-item-text">Passwords checked against HaveIBeenPwned using k-anonymity. Only 5 chars of the SHA-1 hash are sent.</div></div>
     </div>
-    <button class="btn btn-primary" onclick="closeSecurityInfo()">CLOSE</button>
+    <button class="btn btn-primary" id="close-security-btn">CLOSE</button>
   </div>
 </div>
 
 <div class="site-footer">VAULTKEY · DESIGNED &amp; BUILT BY <span>DONTAE</span> · YOUR KEYS. YOUR VAULT. YOUR RULES. · © 2026</div>
 <div class="toast" id="toast"></div>
-
 <script src="/static/app.js"></script>
 </body>
 </html>
