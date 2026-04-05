@@ -7,6 +7,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from cryptography.fernet import Fernet
 import base64
+from datetime import datetime, timedelta
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
@@ -15,7 +16,6 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
-# Encryption key derived from SECRET_KEY
 def get_fernet():
     key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
     key_bytes = hashlib.sha256(key.encode()).digest()
@@ -31,7 +31,7 @@ def decrypt_password(encrypted):
         f = get_fernet()
         return f.decrypt(encrypted.encode()).decode()
     except:
-        return encrypted  # fallback for old unencrypted passwords
+        return encrypted
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -49,6 +49,8 @@ def init_db():
         locked_until TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0")
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP")
     cur.execute('''CREATE TABLE IF NOT EXISTS passwords (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -75,12 +77,6 @@ def login_required(f):
 
 def hash_password(password, salt):
     return hashlib.sha256((password + salt).encode()).hexdigest()
-
-# HTTPS enforcement
-@app.before_request
-def enforce_https():
-    if request.headers.get('X-Forwarded-Proto') == 'http':
-        return jsonify({'error': 'HTTPS required'}), 403
 
 @app.route('/')
 def index():
@@ -132,19 +128,16 @@ def login():
         conn.close()
         return jsonify({'error': 'Invalid username or password'}), 401
 
-    # Check if account is locked
-    from datetime import datetime
-    if user['locked_until'] and user['locked_until'] > datetime.utcnow():
+    locked_until = user.get('locked_until')
+    if locked_until and locked_until > datetime.utcnow():
         cur.close()
         conn.close()
         return jsonify({'error': 'Account locked due to too many failed attempts. Try again in 15 minutes.'}), 429
 
     pw_hash = hash_password(password, user['salt'])
     if pw_hash != user['password_hash']:
-        # Increment failed attempts
-        new_attempts = (user['failed_attempts'] or 0) + 1
+        new_attempts = (user.get('failed_attempts') or 0) + 1
         if new_attempts >= 5:
-            from datetime import timedelta
             lock_until = datetime.utcnow() + timedelta(minutes=15)
             cur.execute("UPDATE users SET failed_attempts=%s, locked_until=%s WHERE id=%s",
                        (new_attempts, lock_until, user['id']))
@@ -158,9 +151,8 @@ def login():
             cur.close()
             conn.close()
             remaining = 5 - new_attempts
-            return jsonify({'error': f'Invalid username or password. {remaining} attempts remaining.'}), 401
+            return jsonify({'error': f'Invalid password. {remaining} attempts remaining.'}), 401
 
-    # Success - reset failed attempts
     cur.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=%s", (user['id'],))
     conn.commit()
     cur.close()
