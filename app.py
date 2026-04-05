@@ -7,6 +7,8 @@ from functools import wraps
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'passwords.db')
 
