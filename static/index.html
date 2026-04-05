@@ -154,6 +154,7 @@
     <div class="auth-corner-tr"></div><div class="auth-corner-bl"></div>
     <div class="auth-logo">VAULT<span>KEY</span></div>
     <div class="auth-sub">SECURE ACCESS SYSTEM v2.0</div>
+    <div style="text-align:center;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:3px;color:var(--accent);margin-bottom:0.5rem;margin-top:-1rem;">BY DONTAE</div>
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchTab('login')">LOGIN</button>
       <button class="auth-tab" onclick="switchTab('register')">REGISTER</button>
@@ -175,7 +176,7 @@
 <!-- MAIN APP -->
 <div class="app-screen" id="app-screen">
   <header>
-    <div class="logo">VAULT<span>KEY</span><span class="logo-sub">SECURE ACCESS SYSTEM v2.0</span></div>
+    <div class="logo">VAULT<span>KEY</span><span class="logo-sub">BUILT BY DONTAE · YOUR KEYS. YOUR VAULT. YOUR RULES.</span></div>
     <div class="header-right">
       <div class="sys-status">● ONLINE</div>
       <div class="user-badge" id="user-badge">USER</div>
@@ -277,6 +278,9 @@
     </div>
   </div>
 </div>
+<div style="position:fixed;bottom:0;left:0;right:0;z-index:10;text-align:center;padding:8px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);border-top:1px solid var(--border);background:rgba(5,5,8,0.9);">
+  VAULTKEY · DESIGNED & BUILT BY <span style="color:var(--accent)">DONTAE</span> · YOUR KEYS. YOUR VAULT. YOUR RULES. · © 2026
+</div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -315,19 +319,20 @@ async function submitAuth(){
   const password=document.getElementById('auth-password').value;
   const errEl=document.getElementById('auth-error');
   const sucEl=document.getElementById('auth-success');
-  errEl.style.display='none';sucEl.style.display='none';
+  errEl.style.display='none'; sucEl.style.display='none';
   if(!username||!password){errEl.textContent='All fields required';errEl.style.display='block';return;}
   const url=currentTab==='login'?'/api/login':'/api/register';
   const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
   const data=await res.json();
   if(!res.ok){errEl.textContent=data.error;errEl.style.display='block';return;}
   if(currentTab==='register'){
-    sucEl.textContent='Account created! Please log in.';sucEl.style.display='block';
-    switchTab('login');
+    sucEl.textContent='Account created! Logging you in...';sucEl.style.display='block';
+    setTimeout(()=>submitLogin(username,password),1000);
   } else {
     showApp(data.username);
   }
 }
+
 async function submitLogin(username,password){
   const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
   const data=await res.json();
