@@ -6,8 +6,20 @@ function hide(id) { document.getElementById(id).classList.add('hidden'); }
 function isVisible(id) { return !document.getElementById(id).classList.contains('hidden'); }
 
 // ===== LANDING =====
-function showLanding() { show('landing-screen'); hide('auth-screen'); hide('app-screen'); }
-function showAuthFromLanding(tab) { hide('landing-screen'); show('auth-screen'); switchTab(tab); }
+function showLanding() {
+  const el = document.getElementById('landing-screen');
+  el.classList.remove('hidden');
+  el.style.display = 'flex';
+  hide('auth-screen');
+  hide('app-screen');
+}
+function showAuthFromLanding(tab) {
+  hide('landing-screen');
+  const el = document.getElementById('auth-screen');
+  el.classList.remove('hidden');
+  el.style.display = 'flex';
+  switchTab(tab);
+}
 
 // Particles
 (function() {
@@ -29,13 +41,26 @@ function showAuthFromLanding(tab) { hide('landing-screen'); show('auth-screen');
 async function checkSession() {
   const res = await fetch('/api/me');
   const data = await res.json();
-  if (data.logged_in) { hide('landing-screen'); showApp(data.username); }
+  if (data.logged_in) {
+    hide('landing-screen');
+    showApp(data.username);
+  } else {
+    show('landing-screen');
+  }
 }
 
-function showAuth() { hide('landing-screen'); show('auth-screen'); hide('app-screen'); }
+function showAuth() {
+  hide('landing-screen');
+  show('auth-screen');
+  hide('app-screen');
+}
 
 function showApp(username) {
-  hide('landing-screen'); hide('auth-screen'); show('app-screen');
+  hide('landing-screen');
+  hide('auth-screen');
+  const appEl = document.getElementById('app-screen');
+  appEl.classList.remove('hidden');
+  appEl.style.display = 'block';
   document.getElementById('user-badge').textContent = '▶ ' + username.toUpperCase();
   loadAll();
 }
