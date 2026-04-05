@@ -82,8 +82,8 @@ def add_security_headers(response):
     # CSP — fixes the -25 point penalty; allows fonts, inline styles, HIBP API
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "script-src 'self'; "
+        "style-src 'self' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
         "connect-src 'self' https://api.pwnedpasswords.com; "
