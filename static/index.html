@@ -158,17 +158,69 @@
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchTab('login')">LOGIN</button>
       <button class="auth-tab" onclick="switchTab('register')">REGISTER</button>
+      <button class="auth-tab" onclick="switchTab('forgot')">FORGOT</button>
     </div>
     <div class="auth-error" id="auth-error"></div>
     <div class="auth-success" id="auth-success"></div>
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" />
+
+    <!-- LOGIN FIELDS -->
+    <div id="login-fields">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" />
+      </div>
     </div>
-    <div class="form-group">
-      <label>Password</label>
-      <input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" />
+
+    <!-- REGISTER FIELDS -->
+    <div id="register-fields" style="display:none">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="reg-username" placeholder="Choose a username" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Choose a password (min 6 chars)" />
+      </div>
+      <div class="form-group">
+        <label>Security Question</label>
+        <select id="reg-question">
+          <option value="What was the name of your first pet?">What was the name of your first pet?</option>
+          <option value="What city were you born in?">What city were you born in?</option>
+          <option value="What is your mother's maiden name?">What is your mother's maiden name?</option>
+          <option value="What was the name of your first school?">What was the name of your first school?</option>
+          <option value="What is your favorite sports team?">What is your favorite sports team?</option>
+          <option value="What was your childhood nickname?">What was your childhood nickname?</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Security Answer</label>
+        <input type="text" id="reg-answer" placeholder="Your answer (remember this!)" />
+      </div>
     </div>
+
+    <!-- FORGOT PASSWORD FIELDS -->
+    <div id="forgot-fields" style="display:none">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="forgot-username" placeholder="Enter your username" />
+      </div>
+      <div id="forgot-question-wrap" style="display:none">
+        <div class="form-group">
+          <label id="forgot-question-label">Security Question</label>
+          <input type="text" id="forgot-answer" placeholder="Your answer" />
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="forgot-newpass" placeholder="Enter new password (min 6 chars)" />
+        </div>
+      </div>
+      <button class="btn btn-gen" style="width:100%;margin-bottom:0.5rem;" onclick="lookupQuestion()">FIND MY ACCOUNT →</button>
+    </div>
+
     <button class="btn btn-primary" style="width:100%;margin-top:0.5rem;" id="auth-btn" onclick="submitAuth()">ACCESS VAULT</button>
   </div>
 </div>
@@ -308,42 +360,75 @@ function showApp(username){
 
 function switchTab(tab){
   currentTab=tab;
-  document.querySelectorAll('.auth-tab').forEach((t,i)=>t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+  document.querySelectorAll('.auth-tab').forEach((t,i)=>{
+    t.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')||(i===2&&tab==='forgot'));
+  });
+  document.getElementById('login-fields').style.display=tab==='login'?'block':'none';
+  document.getElementById('register-fields').style.display=tab==='register'?'block':'none';
+  document.getElementById('forgot-fields').style.display=tab==='forgot'?'block':'none';
+  document.getElementById('auth-btn').style.display=tab==='forgot'?'none':'block';
   document.getElementById('auth-btn').textContent=tab==='login'?'ACCESS VAULT':'CREATE ACCOUNT';
   document.getElementById('auth-error').style.display='none';
   document.getElementById('auth-success').style.display='none';
 }
 
+async function lookupQuestion(){
+  const username=document.getElementById('forgot-username').value.trim();
+  if(!username){showAuthError('Enter your username first');return;}
+  const res=await fetch('/api/get-security-question',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username})});
+  const data=await res.json();
+  if(!res.ok){showAuthError(data.error);return;}
+  document.getElementById('forgot-question-label').textContent=data.security_question;
+  document.getElementById('forgot-question-wrap').style.display='block';
+  document.getElementById('auth-btn').style.display='block';
+  document.getElementById('auth-btn').textContent='RESET PASSWORD';
+  currentTab='reset';
+}
+
 async function submitAuth(){
-  const username=document.getElementById('auth-username').value.trim();
-  const password=document.getElementById('auth-password').value;
   const errEl=document.getElementById('auth-error');
   const sucEl=document.getElementById('auth-success');
-  errEl.style.display='none'; sucEl.style.display='none';
-  if(!username||!password){errEl.textContent='All fields required';errEl.style.display='block';return;}
-  const url=currentTab==='login'?'/api/login':'/api/register';
-  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-  const data=await res.json();
-  if(!res.ok){errEl.textContent=data.error;errEl.style.display='block';return;}
-  if(currentTab==='register'){
-    sucEl.textContent='Account created! Logging you in...';sucEl.style.display='block';
-    setTimeout(()=>submitLogin(username,password),1000);
-  } else {
+  errEl.style.display='none';sucEl.style.display='none';
+  if(currentTab==='login'){
+    const username=document.getElementById('auth-username').value.trim();
+    const password=document.getElementById('auth-password').value;
+    if(!username||!password){showAuthError('All fields required');return;}
+    const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    const data=await res.json();
+    if(!res.ok){showAuthError(data.error);return;}
     showApp(data.username);
+  } else if(currentTab==='register'){
+    const username=document.getElementById('reg-username').value.trim();
+    const password=document.getElementById('reg-password').value;
+    const security_question=document.getElementById('reg-question').value;
+    const security_answer=document.getElementById('reg-answer').value.trim();
+    if(!username||!password||!security_answer){showAuthError('All fields required');return;}
+    const res=await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password,security_question,security_answer})});
+    const data=await res.json();
+    if(!res.ok){showAuthError(data.error);return;}
+    sucEl.textContent='Account created! Please log in.';sucEl.style.display='block';
+    switchTab('login');
+  } else if(currentTab==='reset'){
+    const username=document.getElementById('forgot-username').value.trim();
+    const security_answer=document.getElementById('forgot-answer').value.trim();
+    const new_password=document.getElementById('forgot-newpass').value;
+    if(!security_answer||!new_password){showAuthError('All fields required');return;}
+    const res=await fetch('/api/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,security_answer,new_password})});
+    const data=await res.json();
+    if(!res.ok){showAuthError(data.error);return;}
+    sucEl.textContent='Password reset! Please log in with your new password.';sucEl.style.display='block';
+    switchTab('login');
   }
 }
 
-async function submitLogin(username,password){
-  const res=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-  const data=await res.json();
-  if(res.ok) showApp(data.username);
+function showAuthError(msg){
+  const el=document.getElementById('auth-error');
+  el.textContent=msg;el.style.display='block';
 }
 
 async function logout(){
   await fetch('/api/logout',{method:'POST'});
   showAuth();
-  document.getElementById('auth-username').value='';
-  document.getElementById('auth-password').value='';
 }
 
 async function loadAll(){

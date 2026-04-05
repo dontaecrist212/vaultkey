@@ -45,12 +45,16 @@ def init_db():
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         salt TEXT NOT NULL,
+        security_question TEXT,
+        security_answer TEXT,
         failed_attempts INTEGER DEFAULT 0,
         locked_until TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_attempts INTEGER DEFAULT 0")
     cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP")
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_question TEXT")
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS security_answer TEXT")
     cur.execute('''CREATE TABLE IF NOT EXISTS passwords (
         id SERIAL PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -78,6 +82,9 @@ def login_required(f):
 def hash_password(password, salt):
     return hashlib.sha256((password + salt).encode()).hexdigest()
 
+def hash_answer(answer):
+    return hashlib.sha256(answer.lower().strip().encode()).hexdigest()
+
 @app.route('/')
 def index():
     return send_from_directory('static', 'index.html')
@@ -93,19 +100,24 @@ def register():
     data = request.json
     username = data.get('username', '').strip()
     password = data.get('password', '')
+    security_question = data.get('security_question', '').strip()
+    security_answer = data.get('security_answer', '').strip()
     if not username or not password:
         return jsonify({'error': 'Username and password required'}), 400
     if len(username) < 3:
         return jsonify({'error': 'Username must be at least 3 characters'}), 400
     if len(password) < 6:
         return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    if not security_question or not security_answer:
+        return jsonify({'error': 'Security question and answer required'}), 400
     salt = secrets.token_hex(16)
     pw_hash = hash_password(password, salt)
+    answer_hash = hash_answer(security_answer)
     try:
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("INSERT INTO users (username, password_hash, salt) VALUES (%s,%s,%s)",
-                   (username, pw_hash, salt))
+        cur.execute("INSERT INTO users (username, password_hash, salt, security_question, security_answer) VALUES (%s,%s,%s,%s,%s)",
+                   (username, pw_hash, salt, security_question, answer_hash))
         conn.commit()
         cur.close()
         conn.close()
@@ -122,18 +134,15 @@ def login():
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cur.fetchone()
-
     if not user:
         cur.close()
         conn.close()
         return jsonify({'error': 'Invalid username or password'}), 401
-
     locked_until = user.get('locked_until')
     if locked_until and locked_until > datetime.utcnow():
         cur.close()
         conn.close()
         return jsonify({'error': 'Account locked due to too many failed attempts. Try again in 15 minutes.'}), 429
-
     pw_hash = hash_password(password, user['salt'])
     if pw_hash != user['password_hash']:
         new_attempts = (user.get('failed_attempts') or 0) + 1
@@ -152,7 +161,6 @@ def login():
             conn.close()
             remaining = 5 - new_attempts
             return jsonify({'error': f'Invalid password. {remaining} attempts remaining.'}), 401
-
     cur.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=%s", (user['id'],))
     conn.commit()
     cur.close()
@@ -165,6 +173,52 @@ def login():
 def logout():
     session.clear()
     return jsonify({'message': 'Logged out!'})
+
+@app.route('/api/get-security-question', methods=['POST'])
+def get_security_question():
+    data = request.json
+    username = data.get('username', '').strip()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT security_question FROM users WHERE username=%s", (username,))
+    user = cur.fetchone()
+    cur.close()
+    conn.close()
+    if not user or not user['security_question']:
+        return jsonify({'error': 'Username not found or no security question set'}), 404
+    return jsonify({'security_question': user['security_question']})
+
+@app.route('/api/reset-password', methods=['POST'])
+def reset_password():
+    data = request.json
+    username = data.get('username', '').strip()
+    security_answer = data.get('security_answer', '').strip()
+    new_password = data.get('new_password', '')
+    if not username or not security_answer or not new_password:
+        return jsonify({'error': 'All fields required'}), 400
+    if len(new_password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters'}), 400
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE username=%s", (username,))
+    user = cur.fetchone()
+    if not user:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Username not found'}), 404
+    answer_hash = hash_answer(security_answer)
+    if answer_hash != user['security_answer']:
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Incorrect security answer'}), 401
+    new_salt = secrets.token_hex(16)
+    new_hash = hash_password(new_password, new_salt)
+    cur.execute("UPDATE users SET password_hash=%s, salt=%s, failed_attempts=0, locked_until=NULL WHERE id=%s",
+               (new_hash, new_salt, user['id']))
+    conn.commit()
+    cur.close()
+    conn.close()
+    return jsonify({'message': 'Password reset successfully!'})
 
 @app.route('/api/passwords', methods=['GET'])
 @login_required
