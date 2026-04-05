@@ -1,4 +1,11 @@
-:root{--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);--green:#00ff88;--yellow:#ffcc00;}
+.hidden{display:none !important;}
+.modal-wide-breach{max-width:560px;}
+.modal-wide-health{max-width:680px;}
+.modal-narrow{max-width:380px;}
+.breach-vault-section{margin-top:1rem;border-top:1px solid var(--border);padding-top:1rem;}
+.breach-vault-section p{font-size:12px;color:var(--muted);margin-bottom:10px;}
+#scan-all-progress{margin-top:10px;font-family:'Orbitron',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;text-align:center;}
+--bg:#050508;--surface:#0c0c12;--surface2:#12121c;--border:#2a1a0e;--accent:#ff4500;--accent2:#ff8c00;--text:#ffe8d0;--muted:#7a5a3a;--danger:#ff2020;--glow:rgba(255,69,0,0.4);--green:#00ff88;--yellow:#ffcc00;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;min-height:100vh;overflow-x:hidden;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,69,0,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,69,0,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
@@ -248,3 +255,22 @@ textarea{resize:vertical;min-height:70px;}
 .sec-info-item{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;}
 .sec-info-item-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;}
 .sec-info-item-text{font-size:13px;color:var(--muted);line-height:1.6;}
+
+/* Additional classes for no-inline-style compliance */
+.health-loading{text-align:center;padding:2rem;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:3px;color:var(--muted);}
+.health-score-detail{font-size:12px;color:var(--muted);margin-top:6px;letter-spacing:0.5px;}
+.health-item-col{flex-direction:column;align-items:flex-start;gap:6px;}
+.health-item-row{display:flex;align-items:center;justify-content:space-between;width:100%;}
+.health-item-reused-label{font-family:'Orbitron',monospace;font-size:10px;color:var(--yellow);letter-spacing:1px;}
+.health-item-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.health-chip{font-family:'Orbitron',monospace;font-size:9px;padding:2px 8px;border:1px solid rgba(255,204,0,0.3);border-radius:2px;color:var(--accent2);}
+.health-all-clear{text-align:center;padding:1.5rem;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.2);border-radius:2px;}
+.health-all-clear-icon{font-size:2rem;margin-bottom:8px;}
+.health-all-clear-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:3px;color:var(--green);}
+.health-all-clear-text{font-size:12px;color:var(--muted);margin-top:6px;}
+.sec-info-overlay{display:flex;}
+.sec-info-overlay.hidden{display:none !important;}
+#landing-screen.hidden{display:none !important;}
+#auth-screen.hidden{display:none !important;}
+#app-screen.hidden{display:none !important;}
+#app-screen{display:none;}

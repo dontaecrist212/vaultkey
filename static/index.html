@@ -55,7 +55,7 @@
 </div>
 
 <!-- AUTH SCREEN -->
-<div class="auth-screen" id="auth-screen" style="display:none;">
+<div class="auth-screen hidden" id="auth-screen">
   <div class="auth-box">
     <div class="auth-corner-tr"></div><div class="auth-corner-bl"></div>
     <div class="auth-logo">VAULT<span>KEY</span></div>
@@ -71,7 +71,7 @@
       <div class="form-group"><label>Username</label><input type="text" id="auth-username" placeholder="Enter username" onkeydown="if(event.key==='Enter')submitAuth()" /></div>
       <div class="form-group"><label>Password</label><input type="password" id="auth-password" placeholder="Enter password" onkeydown="if(event.key==='Enter')submitAuth()" /></div>
     </div>
-    <div id="register-fields" style="display:none">
+    <div id="register-fields" class="hidden">
       <div class="form-group"><label>Username</label><input type="text" id="reg-username" placeholder="Choose a username" /></div>
       <div class="form-group"><label>Password</label><input type="password" id="reg-password" placeholder="Choose a password (min 6 chars)" /></div>
       <div class="form-group">
@@ -87,9 +87,9 @@
       </div>
       <div class="form-group"><label>Security Answer</label><input type="text" id="reg-answer" placeholder="Your answer (remember this!)" /></div>
     </div>
-    <div id="forgot-fields" style="display:none">
+    <div id="forgot-fields" class="hidden">
       <div class="form-group"><label>Username</label><input type="text" id="forgot-username" placeholder="Enter your username" /></div>
-      <div id="forgot-question-wrap" style="display:none">
+      <div id="forgot-question-wrap" class="hidden">
         <div class="form-group"><label id="forgot-question-label">Security Question</label><input type="text" id="forgot-answer" placeholder="Your answer" /></div>
         <div class="form-group"><label>New Password</label><input type="password" id="forgot-newpass" placeholder="Enter new password (min 6 chars)" /></div>
       </div>
@@ -110,7 +110,7 @@
       <button class="btn btn-health" onclick="openHealthDashboard()">💪 HEALTH</button>
       <button class="btn btn-breach" onclick="openBreachChecker()">🔴 BREACH CHECK</button>
       <button class="btn btn-mfa" onclick="openMFASetup()">🔐 MFA</button>
-      <button class="btn btn-mfa" onclick="document.getElementById('security-info-wrap').style.display='flex'">🛡️ SECURITY</button>
+      <button class="btn btn-mfa" onclick="openSecurityInfo()">🛡️ SECURITY</button>
       <button class="btn btn-logout" onclick="logout()">LOGOUT</button>
       <button class="btn btn-gen" onclick="openGenerator()">⚡ GENERATE</button>
       <button class="btn btn-primary" onclick="openAdd()">+ NEW ENTRY</button>
@@ -208,7 +208,7 @@
 
 <!-- BREACH CHECKER MODAL -->
 <div class="modal-overlay" id="breach-modal">
-  <div class="modal" style="max-width:560px;">
+  <div class="modal modal-wide-breach">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// BREACH DETECTOR</h2>
     <p>Check if a password has appeared in known data breaches. Uses k-anonymity — only the first 5 chars of the hash are sent.</p>
@@ -222,7 +222,7 @@
       <div class="strength-label">SCAN ALL VAULT ENTRIES</div>
       <p>Check every saved password against the breach database at once.</p>
       <button class="btn btn-gen" id="scan-all-btn" onclick="checkAllBreaches()">⚡ SCAN ENTIRE VAULT</button>
-      <div id="scan-all-progress" style="display:none;"></div>
+      <div id="scan-all-progress" class="hidden"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="document.getElementById('breach-modal').classList.remove('open')">CLOSE</button>
@@ -232,7 +232,7 @@
 
 <!-- HEALTH DASHBOARD MODAL -->
 <div class="modal-overlay" id="health-modal">
-  <div class="modal" style="max-width:680px;">
+  <div class="modal modal-wide-health">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// PASSWORD HEALTH REPORT</h2>
     <div id="health-content"></div>
@@ -267,7 +267,7 @@
 
 <!-- MFA VERIFY MODAL -->
 <div class="modal-overlay" id="mfa-verify-modal">
-  <div class="modal" style="max-width:380px;">
+  <div class="modal modal-narrow">
     <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
     <h2>// MFA VERIFICATION</h2>
     <p>Enter the 6 digit code from your authenticator app.</p>
@@ -294,7 +294,7 @@
       <div class="sec-info-item"><div class="sec-info-item-title">🔒 SECURE CONNECTION</div><div class="sec-info-item-text">All data transmitted over HTTPS. Stored in a secure PostgreSQL database with isolated user accounts.</div></div>
       <div class="sec-info-item"><div class="sec-info-item-title">🔴 BREACH DETECTION</div><div class="sec-info-item-text">Passwords checked against HaveIBeenPwned using k-anonymity. Only 5 chars of the SHA-1 hash are sent — your password never leaves your device.</div></div>
     </div>
-    <button class="btn btn-primary" onclick="document.getElementById('security-info-wrap').style.display='none'">CLOSE</button>
+    <button class="btn btn-primary" onclick="closeSecurityInfo()">CLOSE</button>
   </div>
 </div>
 
