@@ -5,6 +5,8 @@ import os
 from functools import wraps
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from cryptography.fernet import Fernet
+import base64
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
@@ -12,6 +14,24 @@ app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 
 DATABASE_URL = os.environ.get('DATABASE_URL')
+
+# Encryption key derived from SECRET_KEY
+def get_fernet():
+    key = os.environ.get('SECRET_KEY', 'vaultkey2026secure')
+    key_bytes = hashlib.sha256(key.encode()).digest()
+    fernet_key = base64.urlsafe_b64encode(key_bytes)
+    return Fernet(fernet_key)
+
+def encrypt_password(password):
+    f = get_fernet()
+    return f.encrypt(password.encode()).decode()
+
+def decrypt_password(encrypted):
+    try:
+        f = get_fernet()
+        return f.decrypt(encrypted.encode()).decode()
+    except:
+        return encrypted  # fallback for old unencrypted passwords
 
 def get_db():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -25,6 +45,8 @@ def init_db():
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         salt TEXT NOT NULL,
+        failed_attempts INTEGER DEFAULT 0,
+        locked_until TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     cur.execute('''CREATE TABLE IF NOT EXISTS passwords (
@@ -53,6 +75,12 @@ def login_required(f):
 
 def hash_password(password, salt):
     return hashlib.sha256((password + salt).encode()).hexdigest()
+
+# HTTPS enforcement
+@app.before_request
+def enforce_https():
+    if request.headers.get('X-Forwarded-Proto') == 'http':
+        return jsonify({'error': 'HTTPS required'}), 403
 
 @app.route('/')
 def index():
@@ -98,13 +126,45 @@ def login():
     cur = conn.cursor()
     cur.execute("SELECT * FROM users WHERE username=%s", (username,))
     user = cur.fetchone()
-    cur.close()
-    conn.close()
+
     if not user:
+        cur.close()
+        conn.close()
         return jsonify({'error': 'Invalid username or password'}), 401
+
+    # Check if account is locked
+    from datetime import datetime
+    if user['locked_until'] and user['locked_until'] > datetime.utcnow():
+        cur.close()
+        conn.close()
+        return jsonify({'error': 'Account locked due to too many failed attempts. Try again in 15 minutes.'}), 429
+
     pw_hash = hash_password(password, user['salt'])
     if pw_hash != user['password_hash']:
-        return jsonify({'error': 'Invalid username or password'}), 401
+        # Increment failed attempts
+        new_attempts = (user['failed_attempts'] or 0) + 1
+        if new_attempts >= 5:
+            from datetime import timedelta
+            lock_until = datetime.utcnow() + timedelta(minutes=15)
+            cur.execute("UPDATE users SET failed_attempts=%s, locked_until=%s WHERE id=%s",
+                       (new_attempts, lock_until, user['id']))
+            conn.commit()
+            cur.close()
+            conn.close()
+            return jsonify({'error': 'Too many failed attempts. Account locked for 15 minutes.'}), 429
+        else:
+            cur.execute("UPDATE users SET failed_attempts=%s WHERE id=%s", (new_attempts, user['id']))
+            conn.commit()
+            cur.close()
+            conn.close()
+            remaining = 5 - new_attempts
+            return jsonify({'error': f'Invalid username or password. {remaining} attempts remaining.'}), 401
+
+    # Success - reset failed attempts
+    cur.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=%s", (user['id'],))
+    conn.commit()
+    cur.close()
+    conn.close()
     session['user_id'] = user['id']
     session['username'] = user['username']
     return jsonify({'message': 'Logged in!', 'username': user['username']})
@@ -147,7 +207,9 @@ def get_password(pid):
     conn.close()
     if not row:
         return jsonify({'error': 'Not found'}), 404
-    return jsonify(dict(row))
+    row = dict(row)
+    row['password'] = decrypt_password(row['password'])
+    return jsonify(row)
 
 @app.route('/api/passwords', methods=['POST'])
 @login_required
@@ -155,11 +217,12 @@ def add_password():
     data = request.json
     if not data.get('site') or not data.get('username') or not data.get('password'):
         return jsonify({'error': 'Site, username, and password are required'}), 400
+    encrypted = encrypt_password(data['password'])
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO passwords (user_id, site, username, password, notes, category) VALUES (%s,%s,%s,%s,%s,%s)",
-        (session['user_id'], data['site'], data['username'], data['password'],
+        (session['user_id'], data['site'], data['username'], encrypted,
          data.get('notes', ''), data.get('category', 'General'))
     )
     conn.commit()
@@ -171,11 +234,12 @@ def add_password():
 @login_required
 def update_password(pid):
     data = request.json
+    encrypted = encrypt_password(data['password'])
     conn = get_db()
     cur = conn.cursor()
     cur.execute(
         "UPDATE passwords SET site=%s, username=%s, password=%s, notes=%s, category=%s WHERE id=%s AND user_id=%s",
-        (data['site'], data['username'], data['password'],
+        (data['site'], data['username'], encrypted,
          data.get('notes', ''), data.get('category', 'General'), pid, session['user_id'])
     )
     conn.commit()
