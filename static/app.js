@@ -560,23 +560,23 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('close-security-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.remove('open'));
 
   // Dashboard modal
-  document.getElementById('close-dashboard-btn').addEventListener('click', () => hide('dashboard-modal'));
+  document.getElementById('close-dashboard-btn').addEventListener('click', () => document.getElementById('dashboard-modal').classList.remove('open'));
   document.getElementById('refresh-dashboard-btn').addEventListener('click', loadDashboard);
 
   // Activity modal
-  document.getElementById('close-activity-btn').addEventListener('click', () => hide('activity-modal'));
+  document.getElementById('close-activity-btn').addEventListener('click', () => document.getElementById('activity-modal').classList.remove('open'));
 
   // Import modal
-  document.getElementById('close-import-btn').addEventListener('click', () => hide('import-modal'));
+  document.getElementById('close-import-btn').addEventListener('click', () => document.getElementById('import-modal').classList.remove('open'));
   document.getElementById('confirm-import-btn').addEventListener('click', confirmImport);
   setupCSVDrop();
 
   // Confirm delete modal
-  document.getElementById('cancel-delete-btn').addEventListener('click', () => hide('confirm-delete-modal'));
+  document.getElementById('cancel-delete-btn').addEventListener('click', () => document.getElementById('confirm-delete-modal').classList.remove('open'));
   document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
 
   // Account deletion modal
-  document.getElementById('cancel-delete-account-btn').addEventListener('click', () => hide('delete-account-modal'));
+  document.getElementById('cancel-delete-account-btn').addEventListener('click', () => document.getElementById('delete-account-modal').classList.remove('open'));
   document.getElementById('confirm-delete-account-btn').addEventListener('click', deleteAccount);
 
   // Search
@@ -639,7 +639,7 @@ async function toggleFavorite(id) {
 
 // ===== DASHBOARD =====
 async function openDashboard() {
-  show('dashboard-modal');
+  document.getElementById('dashboard-modal').classList.add('open');
   await loadDashboard();
 }
 
@@ -719,14 +719,14 @@ async function loadDashboard() {
     </div>`;
 
   document.getElementById('open-delete-account-btn').addEventListener('click', () => {
-    hide('dashboard-modal');
-    show('delete-account-modal');
+    document.getElementById('dashboard-modal').classList.remove('open');
+    document.getElementById('delete-account-modal').classList.add('open');
   });
 }
 
 // ===== LOGIN ACTIVITY =====
 async function openActivity() {
-  show('activity-modal');
+  document.getElementById('activity-modal').classList.add('open');
   const content = document.getElementById('activity-content');
   content.innerHTML = '<div class="health-loading">LOADING...</div>';
   const logs = await fetch('/api/login-log').then(r => r.json());
@@ -759,9 +759,9 @@ function openShare(id) {
       <button class="btn btn-cancel" id="cancel-share-btn">CANCEL</button>
       <button class="btn btn-primary" id="generate-share-btn">GENERATE LINK</button>
     </div>`;
-  document.getElementById('cancel-share-btn').addEventListener('click', () => hide('share-modal'));
+  document.getElementById('cancel-share-btn').addEventListener('click', () => document.getElementById('share-modal').classList.remove('open'));
   document.getElementById('generate-share-btn').addEventListener('click', generateShareLink);
-  show('share-modal');
+  document.getElementById('share-modal').classList.add('open');
 }
 
 async function generateShareLink() {
@@ -785,7 +785,7 @@ async function generateShareLink() {
   document.getElementById('share-link-text').addEventListener('click', () => {
     navigator.clipboard.writeText(link).then(() => showToast('LINK COPIED!', 'success'));
   });
-  document.getElementById('close-share-done').addEventListener('click', () => hide('share-modal'));
+  document.getElementById('close-share-done').addEventListener('click', () => document.getElementById('share-modal').classList.remove('open'));
 }
 
 // ===== CSV IMPORT =====
@@ -793,7 +793,7 @@ let csvEntries = [];
 
 function openImport() {
   csvEntries = [];
-  show('import-modal');
+  document.getElementById('import-modal').classList.add('open');
   hide('csv-preview');
   hide('confirm-import-btn');
   document.getElementById('csv-file-input').value = '';
@@ -890,7 +890,7 @@ async function confirmImport() {
       </div>
     </div>`;
   document.getElementById('close-import-success').addEventListener('click', () => {
-    hide('import-modal');
+    document.getElementById('import-modal').classList.remove('open');
     loadAll();
   });
   showToast(`${data.count} PASSWORDS IMPORTED!`, 'success');
@@ -900,12 +900,12 @@ async function confirmImport() {
 let pendingDeleteId = null;
 function deleteEntry(id) {
   pendingDeleteId = id;
-  show('confirm-delete-modal');
+  document.getElementById('confirm-delete-modal').classList.add('open');
 }
 async function confirmDelete() {
   if (!pendingDeleteId) return;
   await fetch(`/api/passwords/${pendingDeleteId}`, { method: 'DELETE' });
-  hide('confirm-delete-modal');
+  document.getElementById('confirm-delete-modal').classList.remove('open');
   showToast('ENTRY PURGED FROM VAULT', 'warning');
   loadAll();
   pendingDeleteId = null;
