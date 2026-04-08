@@ -108,6 +108,9 @@
       <div class="sys-status">● ONLINE</div>
       <div class="user-badge" id="user-badge">USER</div>
       <button class="btn btn-health" id="health-btn">💪 HEALTH</button>
+      <button class="btn btn-health" style="border-color:rgba(96,165,250,0.3);color:#60a5fa;" id="dashboard-btn">📊 STATS</button>
+      <button class="btn btn-health" style="border-color:rgba(192,132,252,0.3);color:#c084fc;" id="activity-btn">🕐 ACTIVITY</button>
+      <button class="btn btn-health" style="border-color:rgba(251,191,36,0.3);color:#fbbf24;" id="import-btn">📂 IMPORT</button>
       <button class="btn btn-breach" id="breach-btn">🔴 BREACH CHECK</button>
       <button class="btn btn-mfa" id="mfa-setup-btn">🔐 MFA</button>
       <button class="btn btn-mfa" id="security-info-btn">🛡️ SECURITY</button>
@@ -310,6 +313,93 @@
 
 <div class="site-footer">VAULTKEY · DESIGNED &amp; BUILT BY <span>DONTAE</span> · YOUR KEYS. YOUR VAULT. YOUR RULES. · © 2026</div>
 <div class="toast" id="toast"></div>
+
+<!-- DASHBOARD MODAL -->
+<div class="modal-overlay hidden" id="dashboard-modal">
+  <div class="modal modal-wide-health">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// VAULT DASHBOARD</h2>
+    <div id="dashboard-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" id="close-dashboard-btn">CLOSE</button>
+      <button class="btn btn-primary" id="refresh-dashboard-btn">↻ REFRESH</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN ACTIVITY MODAL -->
+<div class="modal-overlay hidden" id="activity-modal">
+  <div class="modal">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// LOGIN ACTIVITY</h2>
+    <div id="activity-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" id="close-activity-btn">CLOSE</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE PASSWORD MODAL -->
+<div class="modal-overlay hidden" id="share-modal">
+  <div class="modal">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// SHARE PASSWORD</h2>
+    <p class="modal-desc">Generate a one-time encrypted link. Expires after 24 hours or first view.</p>
+    <div id="share-content">
+      <div class="modal-footer" style="margin-top:0;">
+        <button class="btn btn-cancel" id="cancel-share-btn">CANCEL</button>
+        <button class="btn btn-primary" id="generate-share-btn">GENERATE LINK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CSV IMPORT MODAL -->
+<div class="modal-overlay hidden" id="import-modal">
+  <div class="modal modal-wide-breach">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// IMPORT PASSWORDS</h2>
+    <div class="csv-drop-zone" id="csv-drop-zone">
+      <div class="csv-drop-icon">📂</div>
+      <div class="csv-drop-text">Drop CSV file here or click to browse</div>
+      <input type="file" id="csv-file-input" accept=".csv" />
+    </div>
+    <div class="csv-format-hint">Compatible with Chrome, LastPass, Bitwarden exports. Format: <code>site,username,password</code></div>
+    <div id="csv-preview" class="csv-preview hidden"></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" id="close-import-btn">CANCEL</button>
+      <button class="btn btn-primary hidden" id="confirm-import-btn">IMPORT ALL</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-overlay hidden" id="confirm-delete-modal">
+  <div class="modal modal-narrow">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// CONFIRM DELETE</h2>
+    <div class="confirm-delete-warning">⚠ This action cannot be undone. The entry will be permanently removed from your vault.</div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" id="cancel-delete-btn">ABORT</button>
+      <button class="btn btn-danger" id="confirm-delete-btn">DELETE ENTRY</button>
+    </div>
+  </div>
+</div>
+
+<!-- ACCOUNT DELETION MODAL -->
+<div class="modal-overlay hidden" id="delete-account-modal">
+  <div class="modal modal-narrow">
+    <div class="modal-corner-tr"></div><div class="modal-corner-bl"></div>
+    <h2>// DELETE ACCOUNT</h2>
+    <div class="confirm-delete-warning">⚠ This will permanently delete your account and ALL saved passwords. This cannot be undone.</div>
+    <div class="form-group"><label>Confirm Password</label><input type="password" id="delete-account-pass" placeholder="Enter your password" /></div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" id="cancel-delete-account-btn">CANCEL</button>
+      <button class="btn btn-danger" id="confirm-delete-account-btn">DELETE EVERYTHING</button>
+    </div>
+  </div>
+</div>
+
 <script src="/static/app.js"></script>
 </body>
 </html>

@@ -234,6 +234,8 @@ function renderCards(entries) {
       <div class="card-actions-row">
         <button class="btn btn-sm btn-edit edit-btn" data-id="${e.id}">EDIT</button>
         <button class="btn btn-sm btn-danger delete-btn" data-id="${e.id}">DELETE</button>
+        <button class="btn-fav ${e.favorite ? 'active' : ''} fav-btn" data-id="${e.id}" title="Favorite">${e.favorite ? '⭐' : '☆'}</button>
+        <button class="btn btn-sm btn-edit share-btn" data-id="${e.id}" title="Share">🔗</button>
       </div>
     </div>`;
   }).join('');
@@ -241,6 +243,8 @@ function renderCards(entries) {
   grid.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', () => copyPass(btn.dataset.id)));
   grid.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEdit(btn.dataset.id)));
   grid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
+  grid.querySelectorAll('.fav-btn').forEach(btn => btn.addEventListener('click', () => toggleFavorite(btn.dataset.id)));
+  grid.querySelectorAll('.share-btn').forEach(btn => btn.addEventListener('click', () => openShare(btn.dataset.id)));
   grid.querySelectorAll('.quick-copy-btn').forEach(btn => btn.addEventListener('click', async () => {
     const data = await (await fetch(`/api/passwords/${btn.dataset.id}`)).json();
     navigator.clipboard.writeText(data.password).then(() => {
@@ -545,12 +549,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // App header
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('health-btn').addEventListener('click', openHealthDashboard);
+  document.getElementById('dashboard-btn').addEventListener('click', openDashboard);
+  document.getElementById('activity-btn').addEventListener('click', openActivity);
+  document.getElementById('import-btn').addEventListener('click', openImport);
   document.getElementById('breach-btn').addEventListener('click', openBreachChecker);
   document.getElementById('mfa-setup-btn').addEventListener('click', openMFASetup);
   document.getElementById('security-info-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.add('open'));
   document.getElementById('generator-btn').addEventListener('click', openGenerator);
   document.getElementById('new-entry-btn').addEventListener('click', openAdd);
   document.getElementById('close-security-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.remove('open'));
+
+  // Dashboard modal
+  document.getElementById('close-dashboard-btn').addEventListener('click', () => hide('dashboard-modal'));
+  document.getElementById('refresh-dashboard-btn').addEventListener('click', loadDashboard);
+
+  // Activity modal
+  document.getElementById('close-activity-btn').addEventListener('click', () => hide('activity-modal'));
+
+  // Import modal
+  document.getElementById('close-import-btn').addEventListener('click', () => hide('import-modal'));
+  document.getElementById('confirm-import-btn').addEventListener('click', confirmImport);
+  setupCSVDrop();
+
+  // Confirm delete modal
+  document.getElementById('cancel-delete-btn').addEventListener('click', () => hide('confirm-delete-modal'));
+  document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
+
+  // Account deletion modal
+  document.getElementById('cancel-delete-account-btn').addEventListener('click', () => hide('delete-account-modal'));
+  document.getElementById('confirm-delete-account-btn').addEventListener('click', deleteAccount);
 
   // Search
   document.getElementById('search').addEventListener('input', filterEntries);
@@ -600,4 +627,313 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); }));
 
   checkSession();
+});
+
+// ===== FAVORITES =====
+async function toggleFavorite(id) {
+  const res = await fetch(`/api/passwords/${id}/favorite`, { method: 'POST' });
+  const data = await res.json();
+  showToast(data.favorite ? '⭐ ADDED TO FAVORITES' : 'REMOVED FROM FAVORITES', data.favorite ? 'success' : 'info');
+  loadAll();
+}
+
+// ===== DASHBOARD =====
+async function openDashboard() {
+  show('dashboard-modal');
+  await loadDashboard();
+}
+
+async function loadDashboard() {
+  const content = document.getElementById('dashboard-content');
+  content.innerHTML = '<div class="health-loading">LOADING STATS...</div>';
+  const [stats, decrypted] = await Promise.all([
+    fetch('/api/stats').then(r => r.json()),
+    Promise.all(allEntries.map(e => fetch(`/api/passwords/${e.id}`).then(r => r.json())))
+  ]);
+
+  // Calculate security score
+  function scorePass(pw) {
+    let s = 0;
+    if (pw.length>=8) s++; if (pw.length>=12) s++; if (pw.length>=16) s++;
+    if (/[A-Z]/.test(pw)) s++; if (/[a-z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw)) s++; if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return s;
+  }
+  const pwGroups = {};
+  decrypted.forEach(d => { if (!pwGroups[d.password]) pwGroups[d.password] = 0; pwGroups[d.password]++; });
+  const weakCount = decrypted.filter(d => scorePass(d.password) < 4).length;
+  const reusedCount = decrypted.filter(d => pwGroups[d.password] > 1).length;
+  const oldCount = stats.old_passwords || 0;
+  const total = stats.total || 1;
+  const issues = new Set([
+    ...decrypted.filter(d => scorePass(d.password) < 4).map(d => d.id),
+    ...decrypted.filter(d => pwGroups[d.password] > 1).map(d => d.id)
+  ]);
+  const score = Math.max(0, Math.round(((total - issues.size - oldCount * 0.5) / total) * 100));
+  const scoreColor = score >= 80 ? '#00ff88' : score >= 60 ? '#ffcc00' : '#ff4500';
+  const circumference = 2 * Math.PI * 46;
+  const dashOffset = circumference - (score / 100) * circumference;
+
+  // Category colors
+  const catColors = { Social:'#c084fc', Work:'#34d399', Banking:'#60a5fa', Shopping:'#fb923c', Gaming:'#f472b6', Email:'#fbbf24', General:'#94a3b8', Other:'#94a3b8' };
+  const maxCat = Math.max(...stats.categories.map(c => c.count), 1);
+
+  content.innerHTML = `
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:1.5rem;">
+      <div class="security-score-wrap" style="flex-shrink:0;padding:1rem;">
+        <div class="security-score-ring">
+          <svg viewBox="0 0 100 100" width="100" height="100">
+            <circle class="score-ring-bg" cx="50" cy="50" r="46"/>
+            <circle class="score-ring-fill" cx="50" cy="50" r="46"
+              stroke="${scoreColor}"
+              stroke-dasharray="${circumference}"
+              stroke-dashoffset="${dashOffset}"/>
+          </svg>
+          <div class="security-score-num" style="color:${scoreColor}">${score}</div>
+        </div>
+        <div class="security-score-label">SECURITY SCORE</div>
+      </div>
+      <div style="flex:1;">
+        <div class="dashboard-grid" style="margin-bottom:0;">
+          <div class="dash-stat accent"><div class="dash-stat-num">${stats.total}</div><div class="dash-stat-label">Total Entries</div></div>
+          <div class="dash-stat purple"><div class="dash-stat-num">${stats.favorites}</div><div class="dash-stat-label">Favorites</div></div>
+          <div class="dash-stat green"><div class="dash-stat-num">${stats.added_week}</div><div class="dash-stat-label">Added This Week</div></div>
+          <div class="dash-stat yellow"><div class="dash-stat-num">${oldCount}</div><div class="dash-stat-label">Outdated (90d+)</div></div>
+          <div class="dash-stat" style="--accent:#ff2020;"><div class="dash-stat-num" style="color:#ff2020">${weakCount}</div><div class="dash-stat-label">Weak Passwords</div></div>
+          <div class="dash-stat blue"><div class="dash-stat-num">${stats.added_month}</div><div class="dash-stat-label">Added This Month</div></div>
+        </div>
+      </div>
+    </div>
+    ${stats.categories.length ? `
+    <div class="cat-chart">
+      <div class="cat-chart-title">ENTRIES BY CATEGORY</div>
+      ${stats.categories.map(c => `
+        <div class="cat-bar-row">
+          <div class="cat-bar-label">${esc(c.category||'General')}</div>
+          <div class="cat-bar-track"><div class="cat-bar-fill" style="width:${Math.round((c.count/maxCat)*100)}%;background:${catColors[c.category]||'#94a3b8'}"></div></div>
+          <div class="cat-bar-count">${c.count}</div>
+        </div>`).join('')}
+    </div>` : ''}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-danger btn-sm" id="open-delete-account-btn">🗑 DELETE ACCOUNT</button>
+    </div>`;
+
+  document.getElementById('open-delete-account-btn').addEventListener('click', () => {
+    hide('dashboard-modal');
+    show('delete-account-modal');
+  });
+}
+
+// ===== LOGIN ACTIVITY =====
+async function openActivity() {
+  show('activity-modal');
+  const content = document.getElementById('activity-content');
+  content.innerHTML = '<div class="health-loading">LOADING...</div>';
+  const logs = await fetch('/api/login-log').then(r => r.json());
+  if (!logs.length) {
+    content.innerHTML = '<div class="health-loading">NO ACTIVITY YET</div>';
+    return;
+  }
+  content.innerHTML = logs.map(l => {
+    const d = new Date(l.created_at);
+    const timeStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    return `<div class="login-log-item">
+      <div class="login-log-icon">${l.success ? '✅' : '❌'}</div>
+      <div class="login-log-info">
+        <div class="login-log-time">${timeStr}</div>
+        <div class="login-log-ip">${l.ip_address || 'Unknown IP'}</div>
+      </div>
+      <span class="login-log-badge success">${l.success ? 'SUCCESS' : 'FAILED'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ===== SHARE PASSWORD =====
+let sharePasswordId = null;
+function openShare(id) {
+  sharePasswordId = id;
+  const content = document.getElementById('share-content');
+  content.innerHTML = `
+    <p class="modal-desc">Generate a one-time encrypted link. Expires after 24 hours or first view.</p>
+    <div class="modal-footer" style="margin-top:0;">
+      <button class="btn btn-cancel" id="cancel-share-btn">CANCEL</button>
+      <button class="btn btn-primary" id="generate-share-btn">GENERATE LINK</button>
+    </div>`;
+  document.getElementById('cancel-share-btn').addEventListener('click', () => hide('share-modal'));
+  document.getElementById('generate-share-btn').addEventListener('click', generateShareLink);
+  show('share-modal');
+}
+
+async function generateShareLink() {
+  if (!sharePasswordId) return;
+  const res = await fetch(`/api/passwords/${sharePasswordId}/share`, { method: 'POST' });
+  const data = await res.json();
+  if (!res.ok) { showToast(data.error, 'error'); return; }
+  const link = `${window.location.origin}/api/share/${data.token}`;
+  const content = document.getElementById('share-content');
+  content.innerHTML = `
+    <div class="share-link-box" id="share-link-text" title="Click to copy">${link}</div>
+    <div class="share-warning">⚠ This link can only be viewed ONCE and expires in 24 hours.</div>
+    <div class="share-expiry">EXPIRES: ${new Date(data.expires_at).toLocaleString()}</div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" id="close-share-done">CLOSE</button>
+      <button class="btn btn-primary" id="copy-share-link">📋 COPY LINK</button>
+    </div>`;
+  document.getElementById('copy-share-link').addEventListener('click', () => {
+    navigator.clipboard.writeText(link).then(() => showToast('SHARE LINK COPIED!', 'success'));
+  });
+  document.getElementById('share-link-text').addEventListener('click', () => {
+    navigator.clipboard.writeText(link).then(() => showToast('LINK COPIED!', 'success'));
+  });
+  document.getElementById('close-share-done').addEventListener('click', () => hide('share-modal'));
+}
+
+// ===== CSV IMPORT =====
+let csvEntries = [];
+
+function openImport() {
+  csvEntries = [];
+  show('import-modal');
+  hide('csv-preview');
+  hide('confirm-import-btn');
+  document.getElementById('csv-file-input').value = '';
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const entries = [];
+  // Detect header
+  const firstLine = lines[0].toLowerCase();
+  const hasHeader = firstLine.includes('url') || firstLine.includes('site') || firstLine.includes('name') || firstLine.includes('username');
+  const start = hasHeader ? 1 : 0;
+  for (let i = start; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    if (cols.length < 2) continue;
+    let site = '', username = '', password = '', notes = '';
+    if (cols.length >= 4) {
+      // LastPass/Chrome: name, url, username, password
+      site = cols[1] || cols[0];
+      username = cols[2];
+      password = cols[3];
+      notes = cols[4] || '';
+    } else if (cols.length === 3) {
+      site = cols[0]; username = cols[1]; password = cols[2];
+    } else if (cols.length === 2) {
+      site = cols[0]; password = cols[1];
+    }
+    if (site && password) entries.push({ site, username, password, notes });
+  }
+  return entries;
+}
+
+function setupCSVDrop() {
+  const zone = document.getElementById('csv-drop-zone');
+  const input = document.getElementById('csv-file-input');
+  if (!zone || !input) return;
+  zone.addEventListener('click', () => input.click());
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) processCSVFile(file);
+  });
+  input.addEventListener('change', () => {
+    if (input.files[0]) processCSVFile(input.files[0]);
+  });
+}
+
+function processCSVFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    csvEntries = parseCSV(e.target.result);
+    const preview = document.getElementById('csv-preview');
+    const confirmBtn = document.getElementById('confirm-import-btn');
+    if (!csvEntries.length) {
+      showToast('No valid entries found in CSV', 'error');
+      return;
+    }
+    preview.innerHTML = `<div style="font-family:'Orbitron',monospace;font-size:10px;color:var(--accent2);letter-spacing:2px;margin-bottom:8px;">${csvEntries.length} ENTRIES FOUND</div>` +
+      csvEntries.slice(0, 5).map(e => `
+        <div class="csv-preview-row">
+          <span>${esc(e.site)}</span>
+          <span>${esc(e.username)}</span>
+          <span>${'●'.repeat(Math.min(e.password.length, 8))}</span>
+        </div>`).join('') +
+      (csvEntries.length > 5 ? `<div style="font-size:11px;color:var(--muted);padding:6px 0;">...and ${csvEntries.length - 5} more</div>` : '');
+    show('csv-preview');
+    show('confirm-import-btn');
+    confirmBtn.textContent = `IMPORT ${csvEntries.length} PASSWORDS`;
+  };
+  reader.readAsText(file);
+}
+
+async function confirmImport() {
+  if (!csvEntries.length) return;
+  const btn = document.getElementById('confirm-import-btn');
+  btn.disabled = true;
+  btn.textContent = 'IMPORTING...';
+  const res = await fetch('/api/import/csv', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entries: csvEntries })
+  });
+  const data = await res.json();
+  if (!res.ok) { showToast(data.error, 'error'); btn.disabled = false; return; }
+  document.getElementById('import-modal').querySelector('.modal').innerHTML = `
+    <div class="import-success">
+      <div class="import-success-num">${data.count}</div>
+      <div class="import-success-label">PASSWORDS IMPORTED</div>
+      <div style="margin-top:1.5rem;">
+        <button class="btn btn-primary" id="close-import-success">CLOSE</button>
+      </div>
+    </div>`;
+  document.getElementById('close-import-success').addEventListener('click', () => {
+    hide('import-modal');
+    loadAll();
+  });
+  showToast(`${data.count} PASSWORDS IMPORTED!`, 'success');
+}
+
+// ===== CONFIRM DELETE (no browser confirm) =====
+let pendingDeleteId = null;
+function deleteEntry(id) {
+  pendingDeleteId = id;
+  show('confirm-delete-modal');
+}
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  await fetch(`/api/passwords/${pendingDeleteId}`, { method: 'DELETE' });
+  hide('confirm-delete-modal');
+  showToast('ENTRY PURGED FROM VAULT', 'warning');
+  loadAll();
+  pendingDeleteId = null;
+}
+
+// ===== ACCOUNT DELETION =====
+async function deleteAccount() {
+  const pass = document.getElementById('delete-account-pass').value;
+  if (!pass) { showToast('ENTER YOUR PASSWORD', 'error'); return; }
+  const res = await fetch('/api/account', {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pass })
+  });
+  const data = await res.json();
+  if (!res.ok) { showToast(data.error, 'error'); return; }
+  showToast('ACCOUNT DELETED', 'warning');
+  setTimeout(() => showLanding(), 1500);
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (!isVisible('app-screen')) return;
+  if (e.key === 'n' || e.key === 'N') openAdd();
+  if (e.key === '/') { e.preventDefault(); document.getElementById('search').focus(); }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => m.classList.add('hidden'));
+  }
 });

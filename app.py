@@ -68,6 +68,28 @@ def init_db():
         password TEXT NOT NULL,
         notes TEXT DEFAULT '',
         category TEXT DEFAULT 'General',
+        favorite BOOLEAN DEFAULT FALSE,
+        tags TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    cur.execute("ALTER TABLE passwords ADD COLUMN IF NOT EXISTS favorite BOOLEAN DEFAULT FALSE")
+    cur.execute("ALTER TABLE passwords ADD COLUMN IF NOT EXISTS tags TEXT DEFAULT ''")
+    cur.execute('''CREATE TABLE IF NOT EXISTS shared_passwords (
+        id SERIAL PRIMARY KEY,
+        token TEXT UNIQUE NOT NULL,
+        password_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        encrypted_data TEXT NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        viewed BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )''')
+    cur.execute('''CREATE TABLE IF NOT EXISTS login_log (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        success BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
     conn.commit()
@@ -85,7 +107,7 @@ def add_security_headers(response):
         "script-src 'self'; "
         "style-src 'self' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data:; "
+        "img-src 'self' data: https://www.google.com; "
         "connect-src 'self' https://api.pwnedpasswords.com; "
         "frame-ancestors 'none';"
     )
@@ -181,6 +203,16 @@ def login():
         return jsonify({'error': f'Invalid password. {remaining} attempts remaining.'}), 401
     cur.execute("UPDATE users SET failed_attempts=0, locked_until=NULL WHERE id=%s", (user['id'],))
     conn.commit(); cur.close(); conn.close()
+    # Log successful login
+    try:
+        log_conn = get_db()
+        log_cur = log_conn.cursor()
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        ua = request.headers.get('User-Agent', '')[:200]
+        log_cur.execute("INSERT INTO login_log (user_id, ip_address, user_agent, success) VALUES (%s,%s,%s,%s)",
+                       (user['id'], ip, ua, True))
+        log_conn.commit(); log_cur.close(); log_conn.close()
+    except: pass
     if user.get('mfa_enabled'):
         session['mfa_pending_user_id'] = user['id']
         session['mfa_pending_username'] = user['username']
@@ -306,7 +338,7 @@ def get_passwords():
     category = request.args.get('category', '')
     conn = get_db()
     cur = conn.cursor()
-    query = "SELECT id, site, username, notes, category, created_at FROM passwords WHERE user_id=%s"
+    query = "SELECT id, site, username, notes, category, favorite, tags, created_at FROM passwords WHERE user_id=%s"
     params = [session['user_id']]
     if search:
         query += " AND (LOWER(site) LIKE %s OR LOWER(username) LIKE %s)"
@@ -314,7 +346,7 @@ def get_passwords():
     if category and category != 'All':
         query += " AND category=%s"
         params.append(category)
-    query += " ORDER BY created_at DESC"
+    query += " ORDER BY favorite DESC, created_at DESC"
     cur.execute(query, params)
     rows = cur.fetchall()
     cur.close(); conn.close()
@@ -342,9 +374,10 @@ def add_password():
         return jsonify({'error': 'All fields required'}), 400
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("INSERT INTO passwords (user_id, site, username, password, notes, category) VALUES (%s,%s,%s,%s,%s,%s)",
+    cur.execute("INSERT INTO passwords (user_id, site, username, password, notes, category, favorite, tags) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",
         (session['user_id'], data['site'], data['username'], encrypt_password(data['password']),
-         data.get('notes', ''), data.get('category', 'General')))
+         data.get('notes', ''), data.get('category', 'General'),
+         data.get('favorite', False), data.get('tags', '')))
     conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Password saved!'}), 201
 
@@ -354,9 +387,10 @@ def update_password(pid):
     data = request.json
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("UPDATE passwords SET site=%s, username=%s, password=%s, notes=%s, category=%s WHERE id=%s AND user_id=%s",
+    cur.execute("UPDATE passwords SET site=%s, username=%s, password=%s, notes=%s, category=%s, favorite=%s, tags=%s WHERE id=%s AND user_id=%s",
         (data['site'], data['username'], encrypt_password(data['password']),
-         data.get('notes', ''), data.get('category', 'General'), pid, session['user_id']))
+         data.get('notes', ''), data.get('category', 'General'),
+         data.get('favorite', False), data.get('tags', ''), pid, session['user_id']))
     conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Updated!'})
 
@@ -368,6 +402,153 @@ def delete_password(pid):
     cur.execute("DELETE FROM passwords WHERE id=%s AND user_id=%s", (pid, session['user_id']))
     conn.commit(); cur.close(); conn.close()
     return jsonify({'message': 'Deleted!'})
+
+# ── FAVORITES ────────────────────────────────────────────────────────────────
+@app.route('/api/passwords/<int:pid>/favorite', methods=['POST'])
+@login_required
+def toggle_favorite(pid):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT favorite FROM passwords WHERE id=%s AND user_id=%s", (pid, session['user_id']))
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    new_fav = not row['favorite']
+    cur.execute("UPDATE passwords SET favorite=%s WHERE id=%s AND user_id=%s", (new_fav, pid, session['user_id']))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'favorite': new_fav})
+
+# ── DASHBOARD STATS ───────────────────────────────────────────────────────────
+@app.route('/api/stats', methods=['GET'])
+@login_required
+def get_stats():
+    conn = get_db()
+    cur = conn.cursor()
+    uid = session['user_id']
+    cur.execute("SELECT COUNT(*) as total FROM passwords WHERE user_id=%s", (uid,))
+    total = cur.fetchone()['total']
+    cur.execute("SELECT category, COUNT(*) as count FROM passwords WHERE user_id=%s GROUP BY category", (uid,))
+    categories = [dict(r) for r in cur.fetchall()]
+    cur.execute("SELECT COUNT(*) as count FROM passwords WHERE user_id=%s AND created_at > NOW() - INTERVAL '7 days'", (uid,))
+    added_week = cur.fetchone()['count']
+    cur.execute("SELECT COUNT(*) as count FROM passwords WHERE user_id=%s AND created_at > NOW() - INTERVAL '30 days'", (uid,))
+    added_month = cur.fetchone()['count']
+    cur.execute("SELECT COUNT(*) as count FROM passwords WHERE user_id=%s AND favorite=TRUE", (uid,))
+    favorites = cur.fetchone()['count']
+    cur.execute("SELECT COUNT(*) as count FROM passwords WHERE user_id=%s AND created_at < NOW() - INTERVAL '90 days'", (uid,))
+    old_passwords = cur.fetchone()['count']
+    cur.close(); conn.close()
+    return jsonify({
+        'total': total,
+        'categories': categories,
+        'added_week': added_week,
+        'added_month': added_month,
+        'favorites': favorites,
+        'old_passwords': old_passwords
+    })
+
+# ── LOGIN ACTIVITY LOG ────────────────────────────────────────────────────────
+@app.route('/api/login-log', methods=['GET'])
+@login_required
+def get_login_log():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT ip_address, user_agent, success, created_at FROM login_log WHERE user_id=%s ORDER BY created_at DESC LIMIT 10", (session['user_id'],))
+    logs = [dict(r) for r in cur.fetchall()]
+    for l in logs:
+        l['created_at'] = str(l['created_at'])
+    cur.close(); conn.close()
+    return jsonify(logs)
+
+# ── PASSWORD SHARING ──────────────────────────────────────────────────────────
+@app.route('/api/passwords/<int:pid>/share', methods=['POST'])
+@login_required
+def share_password(pid):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM passwords WHERE id=%s AND user_id=%s", (pid, session['user_id']))
+    row = cur.fetchone()
+    if not row:
+        cur.close(); conn.close()
+        return jsonify({'error': 'Not found'}), 404
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=24)
+    plaintext = decrypt_password(row['password'])
+    share_data = f"{row['site']}|{row['username']}|{plaintext}"
+    encrypted_data = encrypt_password(share_data)
+    cur.execute("INSERT INTO shared_passwords (token, password_id, user_id, encrypted_data, expires_at) VALUES (%s,%s,%s,%s,%s)",
+               (token, pid, session['user_id'], encrypted_data, expires_at))
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'token': token, 'expires_at': str(expires_at)})
+
+@app.route('/api/share/<token>', methods=['GET'])
+def view_shared(token):
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM shared_passwords WHERE token=%s", (token,))
+    share = cur.fetchone()
+    if not share:
+        cur.close(); conn.close()
+        return jsonify({'error': 'Invalid or expired link'}), 404
+    if share['viewed'] or share['expires_at'] < datetime.utcnow():
+        cur.close(); conn.close()
+        return jsonify({'error': 'This link has expired or already been used'}), 410
+    cur.execute("UPDATE shared_passwords SET viewed=TRUE WHERE token=%s", (token,))
+    conn.commit()
+    try:
+        data = decrypt_password(share['encrypted_data'])
+        parts = data.split('|', 2)
+        result = {'site': parts[0], 'username': parts[1], 'password': parts[2]}
+    except:
+        result = {'error': 'Could not decrypt'}
+    cur.close(); conn.close()
+    return jsonify(result)
+
+# ── CSV IMPORT ────────────────────────────────────────────────────────────────
+@app.route('/api/import/csv', methods=['POST'])
+@login_required
+def import_csv():
+    data = request.json
+    entries = data.get('entries', [])
+    if not entries:
+        return jsonify({'error': 'No entries provided'}), 400
+    conn = get_db()
+    cur = conn.cursor()
+    imported = 0
+    for entry in entries:
+        site = entry.get('site', '').strip()
+        username = entry.get('username', '').strip()
+        password = entry.get('password', '').strip()
+        if not site or not password:
+            continue
+        cur.execute("INSERT INTO passwords (user_id, site, username, password, notes, category) VALUES (%s,%s,%s,%s,%s,%s)",
+                   (session['user_id'], site, username, encrypt_password(password),
+                    entry.get('notes', ''), entry.get('category', 'General')))
+        imported += 1
+    conn.commit(); cur.close(); conn.close()
+    return jsonify({'message': f'{imported} passwords imported!', 'count': imported})
+
+# ── ACCOUNT DELETION ──────────────────────────────────────────────────────────
+@app.route('/api/account', methods=['DELETE'])
+@login_required
+def delete_account():
+    data = request.json
+    password = data.get('password', '')
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE id=%s", (session['user_id'],))
+    user = cur.fetchone()
+    if not user or hash_password(password, user['salt']) != user['password_hash']:
+        cur.close(); conn.close()
+        return jsonify({'error': 'Incorrect password'}), 401
+    cur.execute("DELETE FROM passwords WHERE user_id=%s", (session['user_id'],))
+    cur.execute("DELETE FROM shared_passwords WHERE user_id=%s", (session['user_id'],))
+    cur.execute("DELETE FROM login_log WHERE user_id=%s", (session['user_id'],))
+    cur.execute("DELETE FROM users WHERE id=%s", (session['user_id'],))
+    conn.commit(); cur.close(); conn.close()
+    session.clear()
+    return jsonify({'message': 'Account deleted'})
 
 if __name__ == '__main__':
     print("\n✅ VaultKey running at http://localhost:5000\n")
