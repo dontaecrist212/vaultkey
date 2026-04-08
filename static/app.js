@@ -549,9 +549,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // App header
   document.getElementById('logout-btn').addEventListener('click', logout);
   document.getElementById('health-btn').addEventListener('click', openHealthDashboard);
-  document.getElementById('dashboard-btn').addEventListener('click', openDashboard);
-  document.getElementById('activity-btn').addEventListener('click', openActivity);
-  document.getElementById('import-btn').addEventListener('click', openImport);
   document.getElementById('breach-btn').addEventListener('click', openBreachChecker);
   document.getElementById('mfa-setup-btn').addEventListener('click', openMFASetup);
   document.getElementById('security-info-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.add('open'));
@@ -560,15 +557,10 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('close-security-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.remove('open'));
 
   // Dashboard modal
-  document.getElementById('close-dashboard-btn').addEventListener('click', () => document.getElementById('dashboard-modal').classList.remove('open'));
-  document.getElementById('refresh-dashboard-btn').addEventListener('click', loadDashboard);
 
   // Activity modal
-  document.getElementById('close-activity-btn').addEventListener('click', () => document.getElementById('activity-modal').classList.remove('open'));
 
   // Import modal
-  document.getElementById('close-import-btn').addEventListener('click', () => document.getElementById('import-modal').classList.remove('open'));
-  document.getElementById('confirm-import-btn').addEventListener('click', confirmImport);
   setupCSVDrop();
 
   // Confirm delete modal
@@ -795,7 +787,6 @@ function openImport() {
   csvEntries = [];
   document.getElementById('import-modal').classList.add('open');
   hide('csv-preview');
-  hide('confirm-import-btn');
   document.getElementById('csv-file-input').value = '';
 }
 
@@ -849,7 +840,6 @@ function processCSVFile(file) {
   reader.onload = e => {
     csvEntries = parseCSV(e.target.result);
     const preview = document.getElementById('csv-preview');
-    const confirmBtn = document.getElementById('confirm-import-btn');
     if (!csvEntries.length) {
       showToast('No valid entries found in CSV', 'error');
       return;
@@ -863,7 +853,6 @@ function processCSVFile(file) {
         </div>`).join('') +
       (csvEntries.length > 5 ? `<div style="font-size:11px;color:var(--muted);padding:6px 0;">...and ${csvEntries.length - 5} more</div>` : '');
     show('csv-preview');
-    show('confirm-import-btn');
     confirmBtn.textContent = `IMPORT ${csvEntries.length} PASSWORDS`;
   };
   reader.readAsText(file);
@@ -871,7 +860,6 @@ function processCSVFile(file) {
 
 async function confirmImport() {
   if (!csvEntries.length) return;
-  const btn = document.getElementById('confirm-import-btn');
   btn.disabled = true;
   btn.textContent = 'IMPORTING...';
   const res = await fetch('/api/import/csv', {
