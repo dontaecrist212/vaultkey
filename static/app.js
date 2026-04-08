@@ -679,27 +679,27 @@ async function loadDashboard() {
   const maxCat = Math.max(...stats.categories.map(c => c.count), 1);
 
   content.innerHTML = `
-    <div style="display:flex;gap:16px;align-items:center;margin-bottom:1.5rem;">
-      <div class="security-score-wrap" style="flex-shrink:0;padding:1rem;">
+    <div class="dash-layout">
+      <div class="security-score-wrap">
         <div class="security-score-ring">
           <svg viewBox="0 0 100 100" width="100" height="100">
             <circle class="score-ring-bg" cx="50" cy="50" r="46"/>
-            <circle class="score-ring-fill" cx="50" cy="50" r="46"
+            <circle class="score-ring-fill ${score>=80?'score-green':score>=60?'score-yellow':'score-red'}" cx="50" cy="50" r="46"
               stroke="${scoreColor}"
               stroke-dasharray="${circumference}"
               stroke-dashoffset="${dashOffset}"/>
           </svg>
-          <div class="security-score-num" style="color:${scoreColor}">${score}</div>
+          <div class="security-score-num ${score>=80?'score-green':score>=60?'score-yellow':'score-red'}">${score}</div>
         </div>
         <div class="security-score-label">SECURITY SCORE</div>
       </div>
-      <div style="flex:1;">
-        <div class="dashboard-grid" style="margin-bottom:0;">
+      <div class="dash-stats-block">
+        <div class="dashboard-grid">
           <div class="dash-stat accent"><div class="dash-stat-num">${stats.total}</div><div class="dash-stat-label">Total Entries</div></div>
           <div class="dash-stat purple"><div class="dash-stat-num">${stats.favorites}</div><div class="dash-stat-label">Favorites</div></div>
           <div class="dash-stat green"><div class="dash-stat-num">${stats.added_week}</div><div class="dash-stat-label">Added This Week</div></div>
           <div class="dash-stat yellow"><div class="dash-stat-num">${oldCount}</div><div class="dash-stat-label">Outdated (90d+)</div></div>
-          <div class="dash-stat" style="--accent:#ff2020;"><div class="dash-stat-num" style="color:#ff2020">${weakCount}</div><div class="dash-stat-label">Weak Passwords</div></div>
+          <div class="dash-stat"><div class="dash-stat-num dash-weak-num">${weakCount}</div><div class="dash-stat-label">Weak Passwords</div></div>
           <div class="dash-stat blue"><div class="dash-stat-num">${stats.added_month}</div><div class="dash-stat-label">Added This Month</div></div>
         </div>
       </div>
@@ -714,7 +714,7 @@ async function loadDashboard() {
           <div class="cat-bar-count">${c.count}</div>
         </div>`).join('')}
     </div>` : ''}
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <div class="dash-danger-zone">
       <button class="btn btn-danger btn-sm" id="open-delete-account-btn">🗑 DELETE ACCOUNT</button>
     </div>`;
 
