@@ -131,6 +131,12 @@ async function logout() { await fetch('/api/logout', { method: 'POST' }); showLa
 
 // ===== VAULT =====
 async function loadAll() {
+  // Show skeleton while loading
+  const grid = document.getElementById('cards-grid');
+  hide('empty-state');
+  grid.innerHTML = `<div class="vault-loading">
+    ${[1,2,3].map(() => '<div class="skeleton skeleton-card"></div>').join('')}
+  </div>`;
   const res = await fetch('/api/passwords');
   if (res.status === 401) { showAuth(); return; }
   allEntries = await res.json();
@@ -162,35 +168,94 @@ function filterEntries() {
   document.getElementById('result-count').textContent = `${f.length} RECORDS`;
 }
 
+// Favicon color based on site name
+function getFaviconColor(site) {
+  const colors = [0,1,2,3,4,5];
+  let hash = 0;
+  for (let i = 0; i < site.length; i++) hash = site.charCodeAt(i) + ((hash << 5) - hash);
+  return `favicon-color-${Math.abs(hash) % 6}`;
+}
+
+// Get site initial for favicon fallback
+function getSiteInitial(site) {
+  return site.replace(/https?:\/\//, '').replace(/www\./, '').charAt(0).toUpperCase();
+}
+
 function renderCards(entries) {
   const grid = document.getElementById('cards-grid');
-  if (!entries.length) { grid.innerHTML = ''; show('empty-state'); return; }
+  if (!entries.length) {
+    grid.innerHTML = '';
+    const empty = document.getElementById('empty-state');
+    empty.innerHTML = `
+      <span class="empty-vault-icon">🔐</span>
+      <h3>VAULT IS EMPTY</h3>
+      <p>Your vault is clean and ready. Add your first encrypted entry to get started.</p>
+      <div class="empty-hint">PRESS + NEW ENTRY TO BEGIN</div>`;
+    show('empty-state');
+    return;
+  }
   hide('empty-state');
   grid.innerHTML = entries.map(e => {
     const cached = breachCache[e.id];
-    let breachHtml = cached === true ? '<div class="breach-badge compromised">⚠ BREACHED</div>' : cached === false ? '<div class="breach-badge safe">✓ SECURE</div>' : '';
+    const breachHtml = cached === true ? '<div class="breach-badge compromised">⚠ BREACHED</div>' : cached === false ? '<div class="breach-badge safe">✓ SECURE</div>' : '';
+    const faviconColor = getFaviconColor(e.site);
+    const siteInitial = getSiteInitial(e.site);
+    const daysOld = Math.floor((new Date() - new Date(e.created_at)) / (1000*60*60*24));
+    const ageLabel = daysOld === 0 ? 'TODAY' : daysOld === 1 ? '1D AGO' : daysOld < 30 ? `${daysOld}D AGO` : daysOld < 365 ? `${Math.floor(daysOld/30)}MO AGO` : `${Math.floor(daysOld/365)}Y AGO`;
     return `<div class="card" id="card-${e.id}">
       <div class="card-corner"></div><div class="card-corner-bl"></div>
-      <div class="card-header"><div class="card-site">${esc(e.site)}</div><span class="cat-tag ${esc(e.category||'General')}">${esc(e.category||'General')}</span></div>
+      <div class="card-header-row">
+        <div class="card-favicon ${faviconColor}">
+          <img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(e.site)}&sz=32" 
+               onerror="this.style.display='none';this.nextSibling.style.display='block'"
+               style="width:20px;height:20px;" />
+          <span class="card-favicon-fallback" style="display:none">${esc(siteInitial)}</span>
+        </div>
+        <div class="card-site-wrap">
+          <div class="card-site">${esc(e.site)}</div>
+        </div>
+        <span class="cat-tag ${esc(e.category||'General')}">${esc(e.category||'General')}</span>
+      </div>
       <div class="card-user">${esc(e.username)}</div>
-      <div class="card-pass"><span class="card-pass-text" id="pw-${e.id}">● ● ● ● ● ● ● ●</span>
+      <div class="card-pass">
+        <span class="card-pass-text" id="pw-${e.id}">● ● ● ● ● ● ● ●</span>
         <button class="eye-btn" data-id="${e.id}">👁</button>
         <button class="copy-btn" data-id="${e.id}">📋</button>
       </div>
       ${breachHtml}
+      <div class="card-quick-actions">
+        <button class="card-quick-btn quick-copy-btn" data-id="${e.id}">⚡ COPY PASSWORD</button>
+        <button class="card-quick-btn quick-copy-user-btn" data-id="${e.id}" data-user="${esc(e.username)}">👤 COPY USER</button>
+      </div>
       ${e.notes ? `<div class="card-notes">${esc(e.notes)}</div>` : ''}
-      <div class="card-actions">
+      <div class="card-meta-row">
+        <div class="card-date">${esc(ageLabel)}</div>
+      </div>
+      <div class="card-actions-row">
         <button class="btn btn-sm btn-edit edit-btn" data-id="${e.id}">EDIT</button>
         <button class="btn btn-sm btn-danger delete-btn" data-id="${e.id}">DELETE</button>
       </div>
-      <div class="card-date">LOGGED: ${new Date(e.created_at).toLocaleDateString()}</div>
     </div>`;
   }).join('');
-  // attach card button listeners
   grid.querySelectorAll('.eye-btn').forEach(btn => btn.addEventListener('click', () => togglePass(btn.dataset.id)));
   grid.querySelectorAll('.copy-btn').forEach(btn => btn.addEventListener('click', () => copyPass(btn.dataset.id)));
   grid.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', () => openEdit(btn.dataset.id)));
   grid.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', () => deleteEntry(btn.dataset.id)));
+  grid.querySelectorAll('.quick-copy-btn').forEach(btn => btn.addEventListener('click', async () => {
+    const data = await (await fetch(`/api/passwords/${btn.dataset.id}`)).json();
+    navigator.clipboard.writeText(data.password).then(() => {
+      btn.textContent = '✓ COPIED!';
+      btn.classList.add('copy-success');
+      setTimeout(() => { btn.textContent = '⚡ COPY PASSWORD'; btn.classList.remove('copy-success'); }, 1500);
+    });
+  }));
+  grid.querySelectorAll('.quick-copy-user-btn').forEach(btn => btn.addEventListener('click', () => {
+    navigator.clipboard.writeText(btn.dataset.user).then(() => {
+      btn.textContent = '✓ COPIED!';
+      btn.classList.add('copy-success');
+      setTimeout(() => { btn.textContent = '👤 COPY USER'; btn.classList.remove('copy-success'); }, 1500);
+    });
+  }));
 }
 
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -204,7 +269,7 @@ async function togglePass(id) {
 
 async function copyPass(id) {
   const data = await (await fetch(`/api/passwords/${id}`)).json();
-  navigator.clipboard.writeText(data.password).then(() => showToast('KEY COPIED TO CLIPBOARD'));
+  navigator.clipboard.writeText(data.password).then(() => showToast('KEY COPIED TO CLIPBOARD', 'success'));
 }
 
 function openAdd() {
@@ -240,7 +305,7 @@ async function saveEntry() {
 async function deleteEntry(id) {
   if (!confirm('CONFIRM DELETE — This cannot be undone.')) return;
   await fetch(`/api/passwords/${id}`, { method: 'DELETE' });
-  showToast('ENTRY PURGED FROM VAULT'); loadAll();
+  showToast('ENTRY PURGED FROM VAULT', 'warning'); loadAll();
 }
 
 // ===== GENERATOR =====
@@ -268,12 +333,41 @@ function updateStrength(pw) {
   document.getElementById('strength-bar').style.width = widths[Math.min(s,4)];
 }
 
-function showToast(msg, isError = false) {
+function updateEntryStrength(pw) {
+  const wrap = document.getElementById('entry-strength-wrap');
+  if (!wrap) return;
+  if (!pw) { wrap.style.opacity = '0'; return; }
+  wrap.style.opacity = '1';
+  let s = 0;
+  if (pw.length >= 6) s++;
+  if (pw.length >= 10) s++;
+  if (pw.length >= 14) s++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+  if (/[0-9]/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;
+  const level = s <= 1 ? 0 : s <= 2 ? 1 : s <= 3 ? 2 : s <= 4 ? 3 : 4;
+  const labels = ['VERY WEAK', 'WEAK', 'FAIR', 'STRONG', 'VERY STRONG'];
+  const types = ['weak', 'weak', 'fair', 'good', 'strong'];
+  const segs = wrap.querySelectorAll('.strength-bar-seg');
+  segs.forEach((seg, i) => {
+    seg.className = 'strength-bar-seg';
+    if (i <= level) seg.classList.add('active', types[level]);
+  });
+  const label = wrap.querySelector('.strength-meter-label');
+  const labelColors = { weak:'var(--danger)', fair:'var(--yellow)', good:'var(--accent2)', strong:'var(--green)' };
+  label.textContent = labels[level];
+  label.style.color = labelColors[types[level]];
+}
+
+function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.borderColor = isError ? 'var(--danger)' : 'var(--accent)';
-  t.style.color = isError ? 'var(--danger)' : 'var(--accent2)';
-  t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500);
+  const icons = { success: '✓', error: '⚠', info: '◈', warning: '⚡' };
+  const toastType = type === true ? 'error' : type === false ? 'success' : type;
+  t.className = `toast toast-${toastType}`;
+  t.innerHTML = `<span class="toast-icon">${icons[toastType] || '◈'}</span><span class="toast-msg">${msg}</span>`;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
 // ===== MFA =====
@@ -291,7 +385,7 @@ async function confirmMFA() {
   const res = await fetch('/api/confirm-mfa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
   const data = await res.json();
   if (!res.ok) { showToast(data.error, true); return; }
-  showToast('MFA ENABLED!'); document.getElementById('mfa-modal').classList.remove('open');
+  showToast('MFA ENABLED!', 'success'); document.getElementById('mfa-modal').classList.remove('open');
 }
 async function verifyMFA() {
   const code = document.getElementById('mfa-verify-code').value.trim();
@@ -360,7 +454,7 @@ async function checkAllBreaches() {
   prog.textContent = `COMPLETE — ${compromised} COMPROMISED / ${allEntries.length} TOTAL`;
   filterEntries();
   if (compromised > 0) showToast(`⚠ ${compromised} BREACHED FOUND`, true);
-  else showToast('ALL PASSWORDS SECURE ✓');
+  else showToast('ALL PASSWORDS SECURE ✓', 'success');
 }
 
 // ===== HEALTH =====
@@ -468,14 +562,21 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('quick-gen-btn').addEventListener('click', () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
     let pw = ''; for (let i=0;i<16;i++) pw+=chars[Math.floor(Math.random()*chars.length)];
-    document.getElementById('f-pass').value = pw; document.getElementById('f-pass').type = 'text';
-    showToast('ACCESS KEY GENERATED');
+    document.getElementById('f-pass').value = pw;
+    document.getElementById('f-pass').type = 'text';
+    updateEntryStrength(pw);
+    showToast('ACCESS KEY GENERATED', 'info');
+  });
+
+  // Live password strength meter in entry form
+  document.getElementById('f-pass').addEventListener('input', () => {
+    updateEntryStrength(document.getElementById('f-pass').value);
   });
 
   // Generator modal
   document.getElementById('close-gen-btn').addEventListener('click', () => document.getElementById('gen-modal').classList.remove('open'));
   document.getElementById('regen-btn').addEventListener('click', generatePassword);
-  document.getElementById('copy-gen-btn').addEventListener('click', () => { if (lastGen) navigator.clipboard.writeText(lastGen).then(() => showToast('KEY COPIED')); });
+  document.getElementById('copy-gen-btn').addEventListener('click', () => { if (lastGen) navigator.clipboard.writeText(lastGen).then(() => showToast('KEY COPIED', 'success')); });
   document.getElementById('g-len').addEventListener('input', () => { document.getElementById('g-len-val').textContent = document.getElementById('g-len').value; generatePassword(); });
   ['g-upper','g-lower','g-nums','g-syms'].forEach(id => document.getElementById(id).addEventListener('change', generatePassword));
 

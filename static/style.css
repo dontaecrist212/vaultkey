@@ -267,3 +267,91 @@ textarea{resize:vertical;min-height:70px;}
 .sec-info-item{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:14px;}
 .sec-info-item-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--accent2);letter-spacing:2px;margin-bottom:6px;}
 .sec-info-item-text{font-size:13px;color:var(--muted);line-height:1.6;}
+
+/* ===== UI UPGRADES ===== */
+
+/* 1. FADE-IN ANIMATIONS */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse-lock{0%,100%{text-shadow:0 0 15px var(--glow)}50%{text-shadow:0 0 30px var(--glow),0 0 60px rgba(255,69,0,0.4)}}
+
+.card{animation:fadeInUp 0.3s ease both;}
+.card:nth-child(1){animation-delay:0.05s}
+.card:nth-child(2){animation-delay:0.1s}
+.card:nth-child(3){animation-delay:0.15s}
+.card:nth-child(4){animation-delay:0.2s}
+.card:nth-child(5){animation-delay:0.25s}
+.card:nth-child(6){animation-delay:0.3s}
+
+/* Skeleton loader */
+.skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:2px;}
+.skeleton-card{height:180px;border-radius:2px;margin-bottom:16px;}
+
+/* 2. IMPROVED EMPTY STATE */
+.empty{text-align:center;padding:5rem 2rem;color:var(--muted);animation:fadeIn 0.5s ease;}
+.empty-vault-icon{font-size:4rem;margin-bottom:1.2rem;animation:pulse-lock 3s ease-in-out infinite;display:block;}
+.empty h3{font-family:'Orbitron',monospace;font-size:14px;margin-bottom:10px;color:var(--accent);letter-spacing:3px;}
+.empty p{font-size:14px;letter-spacing:1px;color:var(--muted);max-width:300px;margin:0 auto 1.5rem;line-height:1.6;}
+.empty-hint{font-size:11px;font-family:'Orbitron',monospace;letter-spacing:2px;color:var(--muted);opacity:0.5;border:1px dashed rgba(255,69,0,0.2);padding:8px 16px;border-radius:2px;display:inline-block;}
+
+/* 3. COLOR-CODED CATEGORY BADGES */
+.cat-tag.Social{color:#c084fc;border-color:rgba(192,132,252,0.4);background:rgba(192,132,252,0.08);}
+.cat-tag.Work{color:#34d399;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08);}
+.cat-tag.Banking{color:#60a5fa;border-color:rgba(96,165,250,0.4);background:rgba(96,165,250,0.08);}
+.cat-tag.Shopping{color:#fb923c;border-color:rgba(251,146,60,0.4);background:rgba(251,146,60,0.08);}
+.cat-tag.Gaming{color:#f472b6;border-color:rgba(244,114,182,0.4);background:rgba(244,114,182,0.08);}
+.cat-tag.General{color:#94a3b8;border-color:rgba(148,163,184,0.3);background:rgba(148,163,184,0.06);}
+.cat-tag.Email{color:#fbbf24;border-color:rgba(251,191,36,0.4);background:rgba(251,191,36,0.08);}
+.cat-tag.Other{color:#94a3b8;border-color:rgba(148,163,184,0.3);background:rgba(148,163,184,0.06);}
+
+/* 4. LIVE PASSWORD STRENGTH METER */
+.strength-meter-wrap{margin-top:8px;}
+.strength-meter-bars{display:flex;gap:4px;margin-bottom:4px;}
+.strength-bar-seg{height:4px;flex:1;border-radius:99px;background:var(--surface2);transition:all 0.3s ease;}
+.strength-bar-seg.active.weak{background:#ff2020;}
+.strength-bar-seg.active.fair{background:#ff8c00;}
+.strength-bar-seg.active.good{background:#ffcc00;}
+.strength-bar-seg.active.strong{background:#00ff88;}
+.strength-meter-label{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:2px;transition:color 0.3s;}
+
+/* 5. IMPROVED TOAST NOTIFICATIONS */
+.toast{position:fixed;bottom:2rem;right:2rem;border-radius:4px;padding:12px 20px;font-size:13px;font-family:'Orbitron',monospace;letter-spacing:1px;z-index:9999;transform:translateX(120%);opacity:0;transition:all 0.35s cubic-bezier(0.4,0,0.2,1);pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:center;gap:10px;max-width:320px;}
+.toast.show{transform:translateX(0);opacity:1;}
+.toast.toast-success{background:var(--surface2);border:1px solid rgba(0,255,136,0.4);color:var(--green);}
+.toast.toast-error{background:var(--surface2);border:1px solid rgba(255,32,32,0.4);color:var(--danger);}
+.toast.toast-info{background:var(--surface2);border:1px solid rgba(255,140,0,0.4);color:var(--accent2);}
+.toast.toast-warning{background:var(--surface2);border:1px solid rgba(255,204,0,0.4);color:var(--yellow);}
+.toast-icon{font-size:16px;flex-shrink:0;}
+.toast-msg{flex:1;line-height:1.4;}
+
+/* 6. ENHANCED ENTRY CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:1.4rem;position:relative;overflow:hidden;transition:all 0.25s cubic-bezier(0.4,0,0.2,1);}
+.card-favicon{width:28px;height:28px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;flex-shrink:0;}
+.card-favicon img{width:100%;height:100%;object-fit:contain;}
+.card-favicon-fallback{font-size:13px;color:var(--accent2);}
+.card-header-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.card-site-wrap{flex:1;min-width:0;}
+.card-site{font-family:'Orbitron',monospace;font-size:10px;color:var(--accent2);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-user{font-size:15px;font-weight:600;color:var(--text);letter-spacing:0.5px;margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-pass{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:2px;padding:8px 12px;margin-bottom:10px;}
+.card-pass-text{font-family:'Orbitron',monospace;font-size:11px;color:var(--muted);flex:1;letter-spacing:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.card-pass-text.revealed{color:var(--accent2);text-shadow:0 0 8px rgba(255,140,0,0.3);letter-spacing:1px;}
+.card-quick-actions{display:flex;gap:6px;margin-bottom:10px;}
+.card-quick-btn{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:2px;color:var(--muted);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;padding:6px;cursor:pointer;transition:all 0.2s;text-align:center;text-transform:uppercase;}
+.card-quick-btn:hover{border-color:var(--accent);color:var(--accent);}
+.card-quick-btn.copy-success{border-color:var(--green);color:var(--green);}
+.card-meta-row{display:flex;align-items:center;justify-content:space-between;}
+.card-date{font-size:9px;color:var(--muted);font-family:'Orbitron',monospace;letter-spacing:1px;opacity:0.5;}
+.card-actions-row{display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+
+/* Favicon colors per domain type */
+.favicon-color-0{background:rgba(255,69,0,0.1);color:var(--accent);}
+.favicon-color-1{background:rgba(192,132,252,0.1);color:#c084fc;}
+.favicon-color-2{background:rgba(96,165,250,0.1);color:#60a5fa;}
+.favicon-color-3{background:rgba(52,211,153,0.1);color:#34d399;}
+.favicon-color-4{background:rgba(251,191,36,0.1);color:#fbbf24;}
+.favicon-color-5{background:rgba(244,114,182,0.1);color:#f472b6;}
+
+/* Loading state for vault */
+.vault-loading{display:flex;flex-direction:column;gap:16px;padding:1rem 0;}
