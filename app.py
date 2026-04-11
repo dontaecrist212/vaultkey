@@ -107,7 +107,7 @@ def add_security_headers(response):
         "script-src 'self'; "
         "style-src 'self' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "img-src 'self' data: https://www.google.com; "
+        "img-src 'self' data: https://www.google.com https://t3.gstatic.com https://t1.gstatic.com https://t2.gstatic.com; "
         "connect-src 'self' https://api.pwnedpasswords.com; "
         "frame-ancestors 'none';"
     )

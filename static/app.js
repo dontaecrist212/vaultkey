@@ -556,6 +556,37 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('new-entry-btn').addEventListener('click', openAdd);
   document.getElementById('close-security-btn').addEventListener('click', () => document.getElementById('security-info-wrap').classList.remove('open'));
 
+  // Settings gear
+  const settingsBtn = document.getElementById('settings-btn');
+  const settingsDropdown = document.getElementById('settings-dropdown');
+  if (settingsBtn && settingsDropdown) {
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settingsDropdown.classList.toggle('hidden');
+    });
+    document.addEventListener('click', (e) => {
+      if (!settingsDropdown.contains(e.target) && e.target !== settingsBtn) {
+        settingsDropdown.classList.add('hidden');
+      }
+    });
+    document.getElementById('settings-delete-account-btn').addEventListener('click', () => {
+      settingsDropdown.classList.add('hidden');
+      document.getElementById('delete-account-modal').classList.add('open');
+    });
+    document.getElementById('settings-activity-btn').addEventListener('click', () => {
+      settingsDropdown.classList.add('hidden');
+      openActivity();
+    });
+    document.getElementById('settings-import-btn').addEventListener('click', () => {
+      settingsDropdown.classList.add('hidden');
+      openImport();
+    });
+    document.getElementById('settings-dashboard-btn').addEventListener('click', () => {
+      settingsDropdown.classList.add('hidden');
+      openDashboard();
+    });
+  }
+
   // Dashboard modal
 
   // Activity modal
