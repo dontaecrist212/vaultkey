@@ -588,10 +588,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Dashboard modal
+  document.getElementById('close-dashboard-btn').addEventListener('click', () => document.getElementById('dashboard-modal').classList.remove('open'));
+  document.getElementById('refresh-dashboard-btn').addEventListener('click', loadDashboard);
 
   // Activity modal
+  document.getElementById('close-activity-btn').addEventListener('click', () => document.getElementById('activity-modal').classList.remove('open'));
 
   // Import modal
+  document.getElementById('close-import-btn').addEventListener('click', () => document.getElementById('import-modal').classList.remove('open'));
+  document.getElementById('confirm-import-btn').addEventListener('click', confirmImport);
   setupCSVDrop();
 
   // Confirm delete modal
@@ -647,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('mfa-verify-code').addEventListener('keydown', e => { if (e.key==='Enter') verifyMFA(); });
 
   // Close modals on backdrop click
-  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); }));
+  document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
 
   checkSession();
 });
