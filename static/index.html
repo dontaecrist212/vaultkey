@@ -113,9 +113,20 @@
       <button class="btn btn-mfa" id="security-info-btn">🛡️ SECURITY</button>
       <button class="btn btn-logout" id="logout-btn">LOGOUT</button>
       <button class="btn btn-gen" id="generator-btn">⚡ GENERATE</button>
+      <button class="btn btn-settings" id="settings-btn" title="Settings">⚙</button>
       <button class="btn btn-primary" id="new-entry-btn">+ NEW ENTRY</button>
     </div>
   </header>
+
+  <!-- SETTINGS DROPDOWN -->
+  <div class="settings-dropdown hidden" id="settings-dropdown">
+    <div class="settings-dropdown-header">SETTINGS</div>
+    <button class="settings-item" id="settings-activity-btn">🕐 Login Activity</button>
+    <button class="settings-item" id="settings-import-btn">📂 Import Passwords</button>
+    <button class="settings-item" id="settings-dashboard-btn">📊 Vault Dashboard</button>
+    <div class="settings-divider"></div>
+    <button class="settings-item settings-item-danger" id="settings-delete-account-btn">🗑 Delete Account</button>
+  </div>
   <div class="container">
     <div class="stats">
       <div class="stat"><div class="stat-num" id="total-count">0</div><div class="stat-label">Total Entries</div></div>
